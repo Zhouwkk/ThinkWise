@@ -1,0 +1,36 @@
+# Data
+train_data/
+val_data/
+eval_datasets/
+math_dataset/
+
+# Checkpoints & logs
+checkpoints/
+tensorboard_log/
+wandb/
+analysis_output/
+*.log
+
+# Experiments (not for upload)
+pilot_experiment/
+PAPO-Eval/
+
+# Internal drafts
+MAR_INTEGRATION_V2.md
+perceptgate.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.eggs/
+dist/
+build/
+.env
+.venv/
+
+# Editor
+.DS_Store
+.idea/
+.vscode/
