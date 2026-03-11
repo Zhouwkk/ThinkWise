@@ -13,6 +13,76 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
+> 注意：`requirements.txt` 中包含 `flash-attn`，直接 `pip install -r requirements.txt` 大概率会遇到下面的问题，建议按照 1.1 节的顺序操作。
+
+### 1.1 flash-attn 安装
+
+**推荐安装顺序：**
+
+**第一步：先单独安装 PyTorch**
+
+`flash-attn` 编译时依赖 torch，必须先装好：
+
+```bash
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+```
+
+根据实际 CUDA 版本选择对应 index-url（`nvcc --version` 查看）：
+- CUDA 11.8 → `cu118`
+- CUDA 12.1 → `cu121`
+- CUDA 12.4 → `cu124`
+
+**第二步：安装 psutil（flash-attn 构建依赖）**
+
+```bash
+pip install psutil
+```
+
+**第三步：安装 flash-attn**
+
+方式一（推荐）：直接下载预编译 wheel，速度快，无需编译：
+
+```bash
+# 适用于 torch 2.5 + CUDA 12 + Python 3.11
+wget https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.5cxx11abiFALSE-cp311-cp311-linux_x86_64.whl
+pip install flash_attn-2.8.3+cu12torch2.5cxx11abiFALSE-cp311-cp311-linux_x86_64.whl
+```
+
+方式二：通过设置 TMPDIR 绕过跨设备链接问题后从源码编译（耗时 20-30 分钟）：
+
+```bash
+mkdir -p ~/tmp
+TMPDIR=~/tmp pip install flash-attn --no-build-isolation
+```
+
+> 直接 `pip install flash-attn --no-build-isolation` 可能报 `[Errno 18] Invalid cross-device link`，原因是 `/tmp` 和 pip 缓存目录在不同文件系统分区，设置 `TMPDIR` 到 home 目录下可解决。
+
+**第四步：安装其余依赖**
+
+```bash
+pip install -r requirements.txt
+pip install -e .
+```
+
+flash-attn 已装好，pip 会自动跳过它。
+
+### 1.2 flash-attn 与 torch 版本不兼容
+
+项目使用了预编译的 whl来安装flash-attention（第三步的方法一）：`flash_attn-2.8.3+cu12torch2.5cxx11abiFALSE-cp311-cp311-linux_x86_64.whl`，该文件**仅适用于 PyTorch 2.5**。
+
+若环境中 PyTorch 版本 > 2.5（如 2.9、2.10），直接安装该 whl 会报：
+```
+ImportError: undefined symbol: _ZN3c104cuda29c10_cuda_check_implementationEiPKcS2_ib
+```
+
+解决方法：针对当前 PyTorch 版本重新编译 flash-attn（耗时约 20-30 分钟）：
+
+```bash
+pip uninstall flash_attn -y
+mkdir -p ~/tmp
+TMPDIR=~/tmp pip install flash-attn --no-build-isolation
+```
+
 ---
 
 ## 2. 数据准备
