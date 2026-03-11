@@ -47,19 +47,21 @@ pip install -e .
 来源：[TIGER-Lab/ViRL39K](https://huggingface.co/datasets/TIGER-Lab/ViRL39K)
 
 ```bash
-# 1. 下载 parquet 文件到本地
-#    从 HuggingFace 下载 39Krelease.parquet
+# 1. 下载数据集（parquet + images.zip）到同一目录
+#    HuggingFace 页面下载 39Krelease.parquet 和 images.zip
 
-# 2. 转换为训练格式
+# 2. 解压图片（必须在跑训练前完成）
+cd /path/to/ViRL39K
+unzip images.zip
+# 解压后应得到 images/ 目录，内含所有 .jpg/.png 图片文件
+
+# 3. 转换 parquet 为训练格式
 python scripts/prepare_virl39k.py \
-    --input /path/to/39Krelease.parquet \
-    --output /path/to/virl39k_train.json
+    --input /path/to/ViRL39K/39Krelease.parquet \
+    --output /path/to/ViRL39K/virl39k_train.json
 ```
 
-该脚本会：
-- 为缺少 `<image>` 占位符的 question 自动补全
-- 将 parquet 中的图片数据转为路径列表
-- 输出 JSON 格式供 `RLHFDataset` 加载
+注意：parquet 里的 `image` 字段存的是相对路径字符串（如 `images/xxx.jpg`），不是图片 bytes。训练时 `dataset.py` 会把 `image_dir` 和这个相对路径拼接成完整路径，所以 **`image_dir` 必须指向 ViRL39K 根目录**（即 `images/` 的上一级），而不是 `images/` 目录本身。
 
 ### 2.3 验证数据：MMK12
 
