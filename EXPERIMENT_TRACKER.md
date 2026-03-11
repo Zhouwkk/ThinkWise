@@ -141,6 +141,7 @@ worker.actor.model.model_path=/path/to/Qwen2.5-VL-7B-Instruct
 | 验证数据 | MMK12 |
 | GPU | A100 80GB × N（按需配置） |
 | Rollout K | 8 |
+| Epochs | 1（暂定，后续视情况调整） |
 | Batch Size | 512 (rollout) / 8 (global update) |
 | 学习率 | 1e-6 |
 | Max Prompt Length | 4096 |

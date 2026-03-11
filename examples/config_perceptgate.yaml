@@ -107,7 +107,7 @@ worker:
     reward_function: ./examples/reward_function/perceptgate_reward.py:compute_score
 
 trainer:
-  total_epochs: 10
+  total_epochs: 1
   max_steps: null
   project_name: perceptgate
   experiment_name: pg-step3-3b
