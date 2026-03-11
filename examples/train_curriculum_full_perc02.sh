@@ -1,7 +1,7 @@
 #!/bin/bash
 # 超参搜索: curriculum + full reward, PERC_WEIGHT=0.2
 
-export CUDA_VISIBLE_DEVICES=4,5
+export CUDA_VISIBLE_DEVICES=4,7
 export NCCL_P2P_DISABLE=1
 export NCCL_IB_DISABLE=1
 export NCCL_DEBUG=WARN

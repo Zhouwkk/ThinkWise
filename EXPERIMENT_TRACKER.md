@@ -2,18 +2,13 @@
 
 ## 1. 环境配置
 
-本项目基于 [FAST](https://github.com/Mr-Loevan/FAST) 框架开发，环境配置参考该项目的 Setup Environment。
-
 ```bash
-# Clone the repository
-git clone https://github.com/Mr-Loevan/FAST-GRPO.git
-cd FAST-GRPO
+git clone https://github.com/Zhouwkk/PerceptGate.git
+cd PerceptGate
 
-# Create conda environment
 conda create -n perceptgate python=3.11
 conda activate perceptgate
 
-# Install dependencies (Refer to EasyR1 installation)
 pip install -r requirements.txt
 pip install -e .
 ```
@@ -95,7 +90,38 @@ data:
   image_dir: /path/to/ViRL39K  # 训练集图片根目录
 ```
 
-### 2.5 自定义数据集适配
+### 2.5 路径修改说明
+
+克隆项目后需要修改以下两处绝对路径：
+
+**`examples/config_perceptgate.yaml`（必改）**
+
+```yaml
+data:
+  train_files: /path/to/virl39k_train.json
+  val_files:
+    - /path/to/MMK12/mmk12_test.json
+  image_dir: /path/to/ViRL39K
+
+worker:
+  actor:
+    model:
+      model_path: /path/to/Qwen2.5-VL-3B-Instruct  # 或 7B-Instruct
+```
+
+**所有训练脚本顶部（`examples/*.sh` 和 `examples/7b/*.sh`）**
+
+```bash
+RUN_ROOT=/path/to/your/output_dir   # checkpoint、日志、wandb 等产物的输出根目录
+```
+
+7B 脚本中还需修改：
+
+```bash
+worker.actor.model.model_path=/path/to/Qwen2.5-VL-7B-Instruct
+```
+
+### 2.6 自定义数据集适配
 
 如需使用其他数据集，只需确保转换为上述 JSON 格式即可。关键要点：
 
@@ -174,11 +200,25 @@ E3 (- R_len)         ← 去掉 R_len，验证其贡献（E4 vs E3）
 
 ---
 
-## 6. 训练脚本使用说明
+## 6. 敏感性分析计划
+
+在主实验（E0/E4）完成并验证方法有效后，针对 γ1、γ2 进行敏感性分析。前期 3B 实验观察到 R_perc 对准确率影响更显著，值得单独验证。
+
+| 实验 | γ_len | γ_perc | 目的 |
+|------|-------|--------|------|
+| S0 | 0.1 | 0.1 | 基准（E4 默认） |
+| S1 | 0.1 | 0.2 | R_perc 增强，验证对准确率的影响 |
+| S2 | 0.2 | 0.2 | 同步增强，验证长度控制是否改善 |
+
+> 前提：E4 主实验结果出来后，根据 val acc 和 val len 的分化情况决定是否启动。
+
+---
+
+## 7. 训练脚本使用说明
 
 所有训练脚本位于 `examples/` 目录，统一通过环境变量和命令行参数控制行为。
 
-### 6.1 从头开始训练
+### 7.1 从头开始训练
 
 **3B 模型（PerceptGate Full）：**
 ```bash
@@ -192,7 +232,7 @@ FRESH_START=1 bash examples/7b/train_curriculum_full_7b.sh
 
 `FRESH_START=1` 会强制忽略已有 checkpoint，从基础模型开始训练。不设置该变量时，脚本会自动检测 `CHECKPOINT_DIR` 下是否存在 `checkpoint_tracker.json`，有则自动续跑。
 
-### 6.2 从最新 checkpoint 续跑
+### 7.2 从最新 checkpoint 续跑
 
 **3B 模型：**
 ```bash
@@ -206,7 +246,7 @@ bash examples/7b/train_curriculum_full_7b.sh
 
 脚本默认行为：若 `${CHECKPOINT_DIR}/checkpoint_tracker.json` 存在，自动设置 `trainer.find_last_checkpoint=true`，从最新保存的 step 继续训练。
 
-### 6.3 从指定 checkpoint 迁移
+### 7.3 从指定 checkpoint 迁移
 
 若要从另一个实验的 checkpoint 迁移（如用 step1 的权重初始化 step2），在脚本中修改 `MIGRATION_CKPT` 变量，并确保 `CHECKPOINT_DIR` 下不存在 `checkpoint_tracker.json`：
 
@@ -216,7 +256,7 @@ MIGRATION_CKPT=/path/to/other_experiment/global_step_XX
 # 当 CHECKPOINT_DIR 下无 checkpoint_tracker.json 且 FRESH_START!=1 时自动使用
 ```
 
-### 6.4 关键参数说明
+### 7.4 关键参数说明
 
 **GPU 配置**
 
@@ -290,7 +330,7 @@ algorithm.online_filtering=true    # 开启课程采样
 algorithm.online_filtering=false   # 关闭（GRPO baseline 用）
 ```
 
-### 6.5 日志查看
+### 7.5 日志查看
 
 训练日志同时写入文件、TensorBoard 和 wandb：
 
@@ -304,7 +344,7 @@ tensorboard --logdir ${RUN_ROOT}/tensorboard
 
 ---
 
-## 7. 评测说明
+## 8. 评测说明
 
 使用 [PAPO-Eval](https://github.com/xhguo7/PAPO-Eval) 进行多数据集评测，具体操作参见该项目文档。
 
