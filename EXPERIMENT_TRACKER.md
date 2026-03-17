@@ -246,6 +246,10 @@ worker.actor.model.model_path=/path/to/Qwen2.5-VL-7B-Instruct
 | E0 | GRPO Baseline | 7B | R_ans + R_fmt | ❌ | fixed (0.01) | `7b/train_grpo_baseline_7b.sh` | 🔲 待运行 | — | — | 第一批：标准GRPO基线 |
 | E2 | Curriculum + R_ans + R_len | 7B | R_ans + R_fmt + R_len | ✅ | fixed (0.01) | `7b/train_curriculum_ans_len_7b.sh` | 🔲 待运行 | — | — | 第二批：消融R_perc |
 | E3 | Curriculum + R_ans + R_perc | 7B | R_ans + R_fmt + R_perc | ✅ | fixed (0.01) | `7b/train_curriculum_ans_perc_7b.sh` | 🔲 待运行 | — | — | 第二批：消融R_len |
+| S1 | Sensitivity: R_len↑ | 7B | R_ans + R_fmt + R_len(0.2) + R_perc(0.1) | ✅ | fixed (0.01) | `7b/train_sensitivity_len02_7b.sh` | 🔲 待运行 | — | — | 敏感度：R_len 增强 |
+| S2 | Sensitivity: R_perc↑ | 7B | R_ans + R_fmt + R_len(0.1) + R_perc(0.2) | ✅ | fixed (0.01) | `7b/train_sensitivity_perc02_7b.sh` | 🔲 待运行 | — | — | 敏感度：R_perc 增强 |
+| S1 | Sensitivity: R_len↑ | 7B | R_ans + R_fmt + R_len(0.2) + R_perc(0.1) | ✅ | fixed (0.01) | `7b/train_sensitivity_len02_7b.sh` | 🔲 待运行 | — | — | 敏感度：R_len 增强 |
+| S2 | Sensitivity: R_perc↑ | 7B | R_ans + R_fmt + R_len(0.1) + R_perc(0.2) | ✅ | fixed (0.01) | `7b/train_sensitivity_perc02_7b.sh` | 🔲 待运行 | — | — | 敏感度：R_perc 增强 |
 
 > 状态标记：🔲 待运行 · 🔄 运行中 · ✅ 已完成 · ❌ 训练终止
 
@@ -275,13 +279,13 @@ E3 (- R_len)         ← 去掉 R_len，验证其贡献（E4 vs E3）
 
 ## 6. 敏感性分析计划
 
-在主实验（E0/E4）完成并验证方法有效后，针对 γ1、γ2 进行敏感性分析。前期 3B 实验观察到 R_perc 对准确率影响更显著，值得单独验证。
+在主实验（E0/E4）完成并验证方法有效后，针对 γ_len、γ_perc 进行敏感性分析。
 
-| 实验 | γ_len | γ_perc | 目的 |
-|------|-------|--------|------|
-| S0 | 0.1 | 0.1 | 基准（E4 默认） |
-| S1 | 0.1 | 0.2 | R_perc 增强，验证对准确率的影响 |
-| S2 | 0.2 | 0.2 | 同步增强，验证长度控制是否改善 |
+| 实验 | γ_len | γ_perc | 目的 | 脚本 |
+|------|-------|--------|------|------|
+| S0 | 0.1 | 0.1 | 基准（E4 默认） | `train_curriculum_full_7b.sh` |
+| S1 | 0.2 | 0.1 | R_len 增强，验证长度控制强化的影响 | `train_sensitivity_len02_7b.sh` |
+| S2 | 0.1 | 0.2 | R_perc 增强，验证感知奖励强化的影响 | `train_sensitivity_perc02_7b.sh` |
 
 > 前提：E4 主实验结果出来后，根据 val acc 和 val len 的分化情况决定是否启动。
 

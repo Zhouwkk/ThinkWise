@@ -220,12 +220,9 @@ class DataParallelPPOActor(BasePPOActor):
     def compute_mar(self, data: DataProto) -> list:
         """Compute MAR by piggybacking on a flash-attention forward pass.
 
-        Strategy: run a normal flash-attention forward pass (no OOM risk), but register
-        hooks on q_proj/k_proj of middle layers to capture raw Q/K outputs. After the
-        forward pass, manually reshape + RoPE + compute attention scores for only the
-        response→vision sub-matrix. This needs no model weights post-forward (FSDP-safe).
-
-        Memory overhead: ~30 MB per layer for captured Q/K + attention sub-matrix.
+        Supports two modes (controlled by self.config.mar_mode):
+          - 'mid': MAR_mid — average over middle 50% layers, uniform temporal mean
+          - 'vsh': MAR_VSH — only top-K visual-sensitive heads, topk temporal aggregation
         """
         from transformers.models.qwen2_5_vl.modeling_qwen2_5_vl import apply_multimodal_rotary_pos_emb
 
@@ -234,15 +231,29 @@ class DataParallelPPOActor(BasePPOActor):
         VISION_TOKEN_ID = 151655
         T = 64
 
+        mar_mode = getattr(self.config, "mar_mode", "mid")
+        vsh_heads = None
+        if mar_mode == "vsh":
+            vsh_heads = [(l, h) for l, h in getattr(self.config, "mar_vsh_heads",
+                         [[33,13],[32,5],[12,3],[34,11],[33,9],[27,3],[35,1],[34,4]])]
+
         select_keys = ["input_ids", "attention_mask", "position_ids", "responses"]
         non_tensor_select_keys = ["multi_modal_inputs"]
         data = data.select(select_keys, non_tensor_select_keys)
 
         language_model = self.actor_module.model.language_model
         num_layers = len(language_model.layers)
-        mid_start = num_layers // 4
-        mid_end = 3 * num_layers // 4
-        num_mid_layers = mid_end - mid_start
+
+        # Determine which layers to hook
+        if mar_mode == "vsh":
+            hook_layers = sorted(set(l for l, h in vsh_heads))
+        elif mar_mode == "full_topk":
+            hook_layers = list(range(num_layers))
+        else:  # mid
+            mid_start = num_layers // 4
+            mid_end = 3 * num_layers // 4
+            hook_layers = list(range(mid_start, mid_end))
+        num_hook_layers = len(hook_layers)
 
         micro_batches = data.split(1)
         mar_values = []
@@ -287,10 +298,10 @@ class DataParallelPPOActor(BasePPOActor):
 
             try:
                 # ── Step 1: Register hooks to capture raw Q/K from q_proj/k_proj ──
-                captured_qk = {}  # {layer_idx: {"q": tensor, "k": tensor}}
+                captured_qk = {}
                 hooks = []
 
-                for layer_idx in range(mid_start, mid_end):
+                for layer_idx in hook_layers:
                     captured_qk[layer_idx] = {}
                     attn = language_model.layers[layer_idx].self_attn
 
@@ -376,8 +387,7 @@ class DataParallelPPOActor(BasePPOActor):
                     continue
 
                 cos, sin = captured_rope["cos"], captured_rope["sin"]
-                # Get attention config from first middle layer (all layers share same config)
-                attn_cfg = language_model.layers[mid_start].self_attn
+                attn_cfg = language_model.layers[hook_layers[0]].self_attn
                 head_dim = attn_cfg.head_dim
                 n_heads = attn_cfg.num_heads
                 n_kv_heads = attn_cfg.num_key_value_heads
@@ -385,49 +395,88 @@ class DataParallelPPOActor(BasePPOActor):
                 scaling = attn_cfg.scaling
                 mrope_section = attn_cfg.rope_scaling["mrope_section"]
 
-                mar_sum = 0.0
-                for layer_idx in range(mid_start, mid_end):
-                    qk = captured_qk.pop(layer_idx, None)
-                    if qk is None or "q" not in qk or "k" not in qk:
-                        continue
+                if mar_mode == "vsh":
+                    # MAR_VSH: collect per-head signals for VSH heads, then topk temporal aggregation
+                    head_signals = []  # list of (T_actual,) tensors, one per VSH head
+                    for layer_idx in hook_layers:
+                        qk = captured_qk.pop(layer_idx, None)
+                        if qk is None or "q" not in qk or "k" not in qk:
+                            continue
+                        raw_q = qk["q"]
+                        raw_k = qk["k"]
+                        q = raw_q.view(1, -1, n_heads, head_dim).transpose(1, 2)
+                        k = raw_k.view(1, -1, n_kv_heads, head_dim).transpose(1, 2)
+                        q, k = apply_multimodal_rotary_pos_emb(q, k, cos, sin, mrope_section)
+                        if n_kv_groups > 1:
+                            k = k.repeat_interleave(n_kv_groups, dim=1)
+                        q_resp = q[:, :, resp_pos, :]
+                        attn_full = torch.matmul(q_resp, k.transpose(-2, -1)) * scaling
+                        attn_probs = torch.softmax(attn_full.float(), dim=-1)
+                        attn_to_vis = attn_probs[:, :, :, vis_pos]  # (1, H, T, V)
+                        # sum over vision tokens → (1, H, T)
+                        attn_sum_vis = attn_to_vis.sum(dim=-1)
+                        for l, h in vsh_heads:
+                            if l == layer_idx:
+                                head_signals.append(attn_sum_vis[0, h, :].cpu())
+                        del raw_q, raw_k, q, k, q_resp, attn_full, attn_probs, attn_to_vis, attn_sum_vis
 
-                    raw_q = qk["q"]  # (1, seq_len, n_heads * head_dim)
-                    raw_k = qk["k"]  # (1, seq_len, n_kv_heads * head_dim)
+                    if head_signals and T_actual > 0:
+                        signals = torch.stack(head_signals, dim=0)  # (K, T_actual)
+                        k_topk = max(1, T_actual // 4)
+                        token_mean = signals.mean(dim=0)
+                        topk_idx = torch.argsort(token_mean)[-k_topk:]
+                        mar_val = float(signals[:, topk_idx].mean().item())
+                    else:
+                        mar_val = 0.0
 
-                    q = raw_q.view(1, -1, n_heads, head_dim).transpose(1, 2)
-                    k = raw_k.view(1, -1, n_kv_heads, head_dim).transpose(1, 2)
+                else:
+                    # MAR_full+topk: all layers, topk temporal aggregation
+                    # MAR_mid: middle 50% layers, uniform temporal mean
+                    mar_layer_signals = []  # (T_actual,) per layer, mean over heads
+                    mar_sum = 0.0
+                    for layer_idx in hook_layers:
+                        qk = captured_qk.pop(layer_idx, None)
+                        if qk is None or "q" not in qk or "k" not in qk:
+                            continue
+                        raw_q = qk["q"]
+                        raw_k = qk["k"]
+                        q = raw_q.view(1, -1, n_heads, head_dim).transpose(1, 2)
+                        k = raw_k.view(1, -1, n_kv_heads, head_dim).transpose(1, 2)
+                        q, k = apply_multimodal_rotary_pos_emb(q, k, cos, sin, mrope_section)
+                        if n_kv_groups > 1:
+                            k = k.repeat_interleave(n_kv_groups, dim=1)
+                        q_resp = q[:, :, resp_pos, :]
+                        attn_full = torch.matmul(q_resp, k.transpose(-2, -1)) * scaling
+                        attn_probs = torch.softmax(attn_full.float(), dim=-1)
+                        attn_to_vis = attn_probs[:, :, :, vis_pos]
+                        if mar_mode == "full_topk":
+                            # sum over vision tokens, mean over heads → (T_actual,)
+                            mar_layer_signals.append(attn_to_vis.sum(dim=-1).mean(dim=1)[0].cpu())
+                        else:
+                            mar_sum += attn_to_vis.sum().item()
+                        del raw_q, raw_k, q, k, q_resp, attn_full, attn_probs, attn_to_vis
 
-                    q, k = apply_multimodal_rotary_pos_emb(q, k, cos, sin, mrope_section)
-
-                    if n_kv_groups > 1:
-                        k = k.repeat_interleave(n_kv_groups, dim=1)
-
-                    # Compute response→all attention, then extract vision columns
-                    q_resp = q[:, :, resp_pos, :]    # (1, H, T, D)
-                    attn_full = torch.matmul(q_resp, k.transpose(-2, -1)) * scaling  # (1, H, T, seq_len)
-                    attn_probs = torch.softmax(attn_full.float(), dim=-1)
-                    attn_to_vis = attn_probs[:, :, :, vis_pos]  # (1, H, T, V)
-
-                    mar_sum += attn_to_vis.sum().item()
-
-                    del raw_q, raw_k, q, k, q_resp, attn_full, attn_probs, attn_to_vis
+                    if mar_mode == "full_topk":
+                        if mar_layer_signals and T_actual > 0:
+                            token_mean = torch.stack(mar_layer_signals, dim=0).mean(dim=0)  # (T_actual,)
+                            k_topk = max(1, T_actual // 4)
+                            topk_idx = torch.argsort(token_mean)[-k_topk:]
+                            mar_val = float(token_mean[topk_idx].mean().item())
+                        else:
+                            mar_val = 0.0
+                    else:
+                        n_vision = len(vis_pos)
+                        if n_vision > 0 and T_actual > 0 and num_hook_layers > 0 and n_heads > 0:
+                            mar_val = mar_sum / (num_hook_layers * n_heads * T_actual)
+                        else:
+                            mar_val = 0.0
 
                 del captured_rope
-
-                n_vision = len(vis_pos)
-                if n_vision > 0 and T_actual > 0 and num_mid_layers > 0 and n_heads > 0:
-                    # attn_to_vis.sum() already sums over V (vision tokens),
-                    # so we only average over (layers, heads, response_tokens)
-                    mar_mid = mar_sum / (num_mid_layers * n_heads * T_actual)
-                else:
-                    mar_mid = 0.0
-                mar_values.append(mar_mid)
+                mar_values.append(mar_val)
 
                 if len(mar_values) <= 3 and self.rank == 0:
-                    print(f"[MAR Debug] sample {len(mar_values)}: mar={mar_mid:.6f}, "
-                          f"truncated_len={truncated_len}, prompt_len={prompt_len}, "
-                          f"T_actual={T_actual}, n_vision={n_vision}, "
-                          f"n_layers={num_mid_layers}, n_heads={n_heads}")
+                    print(f"[MAR Debug] sample {len(mar_values)}: mar={mar_val:.6f} (mode={mar_mode}), "
+                          f"T_actual={T_actual}, n_vision={len(vis_pos)}, n_hook_layers={num_hook_layers}")
 
             except Exception as e:
                 if len(mar_values) < 3 and self.rank == 0:
@@ -439,7 +488,7 @@ class DataParallelPPOActor(BasePPOActor):
         nonzero = [v for v in mar_values if v > 0]
         if mar_values and self.rank == 0:
             mean_val = sum(mar_values) / len(mar_values)
-            print(f"[MAR Summary] total={len(mar_values)}, nonzero={len(nonzero)}, "
+            print(f"[MAR Summary] mode={mar_mode}, total={len(mar_values)}, nonzero={len(nonzero)}, "
                   f"mean={mean_val:.6f}, max={max(mar_values):.6f}")
 
         torch.cuda.empty_cache()

@@ -60,7 +60,8 @@ def accuracy_reward(response: str, ground_truth: str) -> float:
     return 1.0 if grade_answer(answer, ground_truth) else 0.0
 
 
-def compute_score(reward_inputs: list[dict[str, Any]], format_weight: float = FORMAT_WEIGHT) -> list[dict[str, float]]:
+def compute_score(reward_inputs: list[dict[str, Any]], format_weight: float = FORMAT_WEIGHT,
+                  len_weight: float = LEN_WEIGHT, perc_weight: float = PERC_WEIGHT) -> list[dict[str, float]]:
     if not isinstance(reward_inputs, list):
         raise ValueError("Please use `reward_type=batch` for PerceptGate reward function.")
 
@@ -189,7 +190,7 @@ def compute_score(reward_inputs: list[dict[str, Any]], format_weight: float = FO
             # 答错时 r_perc = 0，不给无差别加分
 
         # ── 总奖励 ──
-        overall = r_ans + format_weight * fmt + LEN_WEIGHT * r_len + PERC_WEIGHT * r_perc
+        overall = r_ans + format_weight * fmt + len_weight * r_len + perc_weight * r_perc
 
         scores.append({
             "overall": float(overall),

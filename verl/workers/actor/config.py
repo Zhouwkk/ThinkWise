@@ -102,6 +102,12 @@ class ActorConfig:
     """ulysses sequence parallel size"""
     use_torch_compile: bool = True
     """enable torch compile"""
+    mar_mode: str = "mid"
+    """MAR computation mode: 'mid' (middle 50% layers, uniform mean), 'full_topk' (all layers, topk temporal), or 'vsh' (top-K visual-sensitive heads, topk temporal)"""
+    mar_vsh_heads: list = field(default_factory=lambda: [
+        [33, 13], [32, 5], [12, 3], [34, 11], [33, 9], [27, 3], [35, 1], [34, 4]
+    ])
+    """VSH head list as [[layer, head], ...], used when mar_mode='vsh'"""
     model: ModelConfig = field(default_factory=ModelConfig)
     optim: OptimConfig = field(default_factory=OptimConfig)
     fsdp: FSDPConfig = field(default_factory=FSDPConfig)
