@@ -248,9 +248,6 @@ worker.actor.model.model_path=/path/to/Qwen2.5-VL-7B-Instruct
 | E3 | Curriculum + R_ans + R_perc | 7B | R_ans + R_fmt + R_perc | ✅ | fixed (0.01) | `7b/train_curriculum_ans_perc_7b.sh` | 🔲 待运行 | — | — | 第二批：消融R_len |
 | S1 | Sensitivity: R_len↑ | 7B | R_ans + R_fmt + R_len(0.2) + R_perc(0.1) | ✅ | fixed (0.01) | `7b/train_sensitivity_len02_7b.sh` | 🔲 待运行 | — | — | 敏感度：R_len 增强 |
 | S2 | Sensitivity: R_perc↑ | 7B | R_ans + R_fmt + R_len(0.1) + R_perc(0.2) | ✅ | fixed (0.01) | `7b/train_sensitivity_perc02_7b.sh` | 🔲 待运行 | — | — | 敏感度：R_perc 增强 |
-| S1 | Sensitivity: R_len↑ | 7B | R_ans + R_fmt + R_len(0.2) + R_perc(0.1) | ✅ | fixed (0.01) | `7b/train_sensitivity_len02_7b.sh` | 🔲 待运行 | — | — | 敏感度：R_len 增强 |
-| S2 | Sensitivity: R_perc↑ | 7B | R_ans + R_fmt + R_len(0.1) + R_perc(0.2) | ✅ | fixed (0.01) | `7b/train_sensitivity_perc02_7b.sh` | 🔲 待运行 | — | — | 敏感度：R_perc 增强 |
-
 > 状态标记：🔲 待运行 · 🔄 运行中 · ✅ 已完成 · ❌ 训练终止
 
 ---
