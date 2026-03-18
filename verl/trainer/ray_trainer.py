@@ -664,8 +664,9 @@ class RayPPOTrainer:
                 dynamic_filter_low, dynamic_filter_high = self.get_dynamic_filter_values()
                 
                 # Log the dynamic filter values for monitoring
-                print(f"[Online Filtering] Step {self.global_step}/{self.training_steps}, "
-                      f"Using filter_low={dynamic_filter_low:.3f}, filter_high={dynamic_filter_high:.3f}")
+                if num_try_make_batch == 1:
+                    print(f"[Online Filtering] Step {self.global_step}/{self.training_steps}, "
+                          f"Using filter_low={dynamic_filter_low:.3f}, filter_high={dynamic_filter_high:.3f}")
                 
                 kept_uids = [
                     uid
@@ -682,9 +683,6 @@ class RayPPOTrainer:
                 
                 new_batch = new_batch[kept_sample_idxs]
                 del reward_tensor  # 过滤阶段的 reward 不保留，后续会重新计算
-                print(f"[Online Filtering] Kept {len(kept_sample_idxs)} samples "
-                      f"(filter_key={self.config.algorithm.filter_key}). "
-                      f"token_level_scores NOT stored — will recompute after compute_mar.")
 
             batch = DataProto.concat([batch, new_batch]) if batch is not None else new_batch
             del new_batch, gen_batch, gen_batch_output
@@ -693,10 +691,11 @@ class RayPPOTrainer:
             current_batch_size = len(batch) // self.config.worker.rollout.n
             rollout_batch_size = self.config.data.rollout_batch_size
             if current_batch_size < rollout_batch_size:
-                print(f"{current_batch_size=} < {rollout_batch_size=}")
                 max_try_make_batch = self.config.trainer.max_try_make_batch
                 if max_try_make_batch <= 0 or num_try_make_batch < max_try_make_batch:
-                    print(f"{num_try_make_batch=}. Continue generating...")
+                    if num_try_make_batch % 10 == 0:
+                        print(f"[Batch] {current_batch_size}/{rollout_batch_size} samples collected "
+                              f"({num_try_make_batch} tries)...")
                 else:
                     raise RuntimeError(
                         f"{num_try_make_batch=} >= {max_try_make_batch=}. Generated too many. Please check your data."
