@@ -1,7 +1,7 @@
 #!/bin/bash
-# PerceptGate Full (7B) — 无课程采样，消融课程采样的贡献
+# 消融实验 E2 (3B): curriculum + R_ans + R_len (no R_perc)
 
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+export CUDA_VISIBLE_DEVICES=0,4
 export NCCL_P2P_DISABLE=1
 export TQDM_DISABLE=1
 export PYTHONWARNINGS="ignore::UserWarning:PIL"
@@ -13,7 +13,7 @@ export NCCL_SOCKET_IFNAME=ens12f1np1
 export PYTORCH_ALLOC_CONF=expandable_segments:True
 
 RUN_ROOT=/data-store/zhouwenkang/fast_runs
-CHECKPOINT_DIR=${RUN_ROOT}/checkpoints/perceptgate-7b/pg-full-no-curriculum-7b
+CHECKPOINT_DIR=${RUN_ROOT}/checkpoints/perceptgate/pg-curriculum-ans-len-3b
 mkdir -p "${RUN_ROOT}/hf_cache" "${RUN_ROOT}/pip_cache" "${RUN_ROOT}/tensorboard" "${RUN_ROOT}/wandb" "${RUN_ROOT}/logs" "${CHECKPOINT_DIR}"
 
 export HF_HOME=${RUN_ROOT}/hf_cache
@@ -39,13 +39,12 @@ fi
 
 python -m verl.trainer.main \
     config=examples/config_perceptgate.yaml \
-    trainer.n_gpus_per_node=4 \
+    trainer.n_gpus_per_node=2 \
     trainer.save_checkpoint_path=${CHECKPOINT_DIR} \
     trainer.project_name=perceptgate-mar \
-    trainer.experiment_name=pg-full-no-curriculum-7b \
+    trainer.experiment_name=pg-curriculum-ans-len-3b \
     trainer.save_limit=-1 \
-    algorithm.online_filtering=false \
+    algorithm.online_filtering=true \
     algorithm.hperc_filter_schedule=null \
-    worker.actor.model.model_path=/data/zhouwenkang/models/Qwen2.5-VL-7B-Instruct \
-    worker.reward.reward_function=./examples/reward_function/perceptgate_reward.py:compute_score \
-    "${RESUME_ARGS[@]}" 2>&1 | tee "${RUN_ROOT}/logs/train_full_no_curriculum_7b.log"
+    worker.reward.reward_function=./examples/reward_function/perceptgate_reward_ans_len.py:compute_score \
+    "${RESUME_ARGS[@]}" 2>&1 | tee "${RUN_ROOT}/logs/train_curriculum_ans_len_3b.log"

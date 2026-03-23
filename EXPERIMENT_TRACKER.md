@@ -234,8 +234,11 @@ worker.actor.model.model_path=/path/to/Qwen2.5-VL-7B-Instruct
 
 | ID | 实验名 | 模型 | 奖励组成 | 课程采样 | KL 类型 | 训练脚本 | 状态 | 测评 | val acc | val len (mean) | 备注 |
 |----|--------|------|---------|---------|---------|---------|------|------|---------|----------------|------|
-| 3B-E0 | GRPO Baseline | 3B | R_ans + R_fmt | ❌ | fixed (0.01) | `examples/train_grpo_baseline_3b.sh` | ✅ 已完成 | 🔄 测评中 | — | — | 标准GRPO基线 |
-| 3B-E4 | PerceptGate Full | 3B | R_ans + R_fmt + R_len + R_perc | ✅ | fixed (0.01) | `examples/train_curriculum_full.sh` | ✅ 已完成 | ✅ 已测评 | — | — | |
+| 3B-E0 | GRPO Baseline | 3B | R_ans + R_fmt | ❌ | fixed (0.01) | `examples/3b/train_grpo_baseline_3b.sh` | ✅ 已完成 | 🔄 测评中 | — | — | 标准GRPO基线 |
+| 3B-E4 | PerceptGate Full | 3B | R_ans + R_fmt + R_len + R_perc | ✅ | fixed (0.01) | `examples/3b/train_curriculum_full.sh` | ✅ 已完成 | ✅ 已测评 | — | — | |
+| 3B-E2 | Curriculum + R_ans + R_len | 3B | R_ans + R_fmt + R_len | ✅ | fixed (0.01) | `examples/3b/train_curriculum_ans_len_3b.sh` | 🔲 待运行 | 🔲 待测评 | — | — | 消融R_perc |
+| 3B-E3 | Curriculum + R_ans + R_perc | 3B | R_ans + R_fmt + R_perc | ✅ | fixed (0.01) | `examples/3b/train_curriculum_ans_perc_3b.sh` | 🔲 待运行 | 🔲 待测评 | — | — | 消融R_len |
+| 3B-E5 | Full - Curriculum | 3B | R_ans + R_fmt + R_len + R_perc | ❌ | fixed (0.01) | `examples/3b/train_full_no_curriculum_3b.sh` | 🔲 待运行 | 🔲 待测评 | — | — | 消融课程采样（3B-E4 vs 3B-E5） |
 
 ### 7B 模型实验
 
@@ -300,7 +303,7 @@ E3 (- R_len)         ← 去掉 R_len，验证其贡献（E4 vs E3）
 
 **3B 模型（PerceptGate Full）：**
 ```bash
-FRESH_START=1 bash examples/train_curriculum_full.sh
+FRESH_START=1 bash examples/3b/train_curriculum_full.sh
 ```
 
 **7B 模型（PerceptGate Full）：**
@@ -314,7 +317,7 @@ FRESH_START=1 bash examples/7b/train_curriculum_full_7b.sh
 
 **3B 模型：**
 ```bash
-bash examples/train_curriculum_full.sh
+bash examples/3b/train_curriculum_full.sh
 ```
 
 **7B 模型：**

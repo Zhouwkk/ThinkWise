@@ -42,7 +42,7 @@ python -m verl.trainer.main \
     data.train_files=/data/zhouwenkang/FAST/train_data/ViRL39K/virl39k_filtered.json \
     trainer.n_gpus_per_node=4 \
     trainer.save_checkpoint_path=${CHECKPOINT_DIR} \
-    trainer.project_name=perceptgate-mar-7b \
+    trainer.project_name=perceptgate-mar \
     trainer.experiment_name=pg-filtered-full-7b \
     trainer.save_limit=-1 \
     algorithm.online_filtering=true \
