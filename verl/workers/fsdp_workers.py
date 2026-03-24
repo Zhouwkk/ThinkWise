@@ -191,7 +191,12 @@ class FSDPWorker(Worker):
             torch_dtype = PrecisionType.to_dtype(fsdp_config.torch_dtype)
 
         if role == "critic":
-            AutoClass = AutoModelForTokenClassification
+            # Use the same AutoClass as actor/ref to support multimodal models (e.g. Qwen2.5-VL)
+            # that are not registered under AutoModelForTokenClassification.
+            if type(self.model_config) in AutoModelForImageTextToText._model_mapping.keys():
+                AutoClass = AutoModelForImageTextToText
+            else:
+                AutoClass = AutoModelForCausalLM
         elif type(self.model_config) in AutoModelForImageTextToText._model_mapping.keys():
             AutoClass = AutoModelForImageTextToText
         else:
