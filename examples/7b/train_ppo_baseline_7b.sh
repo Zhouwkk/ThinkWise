@@ -50,6 +50,7 @@ python -m verl.trainer.main \
     algorithm.online_filtering=false \
     algorithm.hperc_filter_schedule=null \
     worker.rollout.n=1 \
+    worker.actor.mar_mode=disabled \
     worker.actor.model.model_path=/data/zhouwenkang/models/Qwen2.5-VL-7B-Instruct \
     worker.critic.model.model_path=/data/zhouwenkang/models/Qwen2.5-VL-7B-Instruct \
     worker.critic.global_batch_size=8 \

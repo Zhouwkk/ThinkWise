@@ -223,7 +223,15 @@ class DataParallelPPOActor(BasePPOActor):
         Supports two modes (controlled by self.config.mar_mode):
           - 'mid': MAR_mid — average over middle 50% layers, uniform temporal mean
           - 'vsh': MAR_VSH — only top-K visual-sensitive heads, topk temporal aggregation
+          - 'disabled': Skip MAR computation and return empty results
         """
+        # Check if MAR is disabled
+        mar_mode = getattr(self.config, "mar_mode", "mid")
+        if mar_mode == "disabled":
+            # Return empty MAR values to skip computation
+            batch_size = len(data)
+            return [0.0] * batch_size
+        
         from transformers.models.qwen2_5_vl.modeling_qwen2_5_vl import apply_multimodal_rotary_pos_emb
 
         self.actor_module.eval()
