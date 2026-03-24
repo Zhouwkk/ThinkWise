@@ -236,11 +236,13 @@ worker.actor.model.model_path=/path/to/Qwen2.5-VL-7B-Instruct
 |----|--------|------|---------|---------|---------|---------|------|------|---------|----------------|------|
 | 3B-E0 | GRPO Baseline | 3B | R_ans + R_fmt | ❌ | fixed (0.01) | `examples/3b/train_grpo_baseline_3b.sh` | ✅ 已完成 | 🔄 测评中 | — | — | 标准GRPO基线 |
 | 3B-E4 | PerceptGate Full | 3B | R_ans + R_fmt + R_len + R_perc | ✅ | fixed (0.01) | `examples/3b/train_curriculum_full.sh` | ✅ 已完成 | ✅ 已测评 | — | — | |
-| 3B-E2 | Curriculum + R_ans + R_len | 3B | R_ans + R_fmt + R_len | ✅ | fixed (0.01) | `examples/3b/train_curriculum_ans_len_3b.sh` | 🔲 待运行 | 🔲 待测评 | — | — | 消融R_perc |
-| 3B-E3 | Curriculum + R_ans + R_perc | 3B | R_ans + R_fmt + R_perc | ✅ | fixed (0.01) | `examples/3b/train_curriculum_ans_perc_3b.sh` | 🔲 待运行 | 🔲 待测评 | — | — | 消融R_len |
-| 3B-E5 | Full - Curriculum | 3B | R_ans + R_fmt + R_len + R_perc | ❌ | fixed (0.01) | `examples/3b/train_full_no_curriculum_3b.sh` | 🔲 待运行 | 🔲 待测评 | — | — | 消融课程采样（3B-E4 vs 3B-E5） |
-| 3B-P1 | PerceptGate PPO | 3B | R_ans + R_fmt + R_len + R_perc | ✅ | GAE (γ=1.0, λ=0.95) | `examples/3b/train_ppo_3b.sh` | 🔲 待运行 | 🔲 待测评 | — | — | PPO + PerceptGate 奖励（需4张卡） |
-| 3B-R1 | PerceptGate REINFORCE++ | 3B | R_ans + R_fmt + R_len + R_perc | ✅ | fixed (0.01) | `examples/3b/train_reinforce_pp_3b.sh` | 🔲 待运行 | 🔲 待测评 | — | — | REINFORCE++ + PerceptGate 奖励 |
+| 3B-E2 | Curriculum + R_ans + R_len | 3B | R_ans + R_fmt + R_len | ✅ | fixed (0.01) | `examples/3b/train_curriculum_ans_len_3b.sh` | 🔄 运行中 | 🔲 待测评 | — | — | 消融R_perc |
+| 3B-E3 | Curriculum + R_ans + R_perc | 3B | R_ans + R_fmt + R_perc | ✅ | fixed (0.01) | `examples/3b/train_curriculum_ans_perc_3b.sh` | 🔄 运行中 | 🔲 待测评 | — | — | 消融R_len |
+| 3B-E5 | Full - Curriculum | 3B | R_ans + R_fmt + R_len + R_perc | ❌ | fixed (0.01) | `examples/3b/train_full_no_curriculum_3b.sh` | 🔄 运行中 | 🔲 待测评 | — | — | 消融课程采样（3B-E4 vs 3B-E5） |
+| 3B-P0 | PPO Baseline | 3B | R_ans + R_fmt | ❌ | GAE (γ=1.0, λ=0.95) | `examples/3b/train_ppo_baseline_3b.sh` | 🔲 待运行 | 🔲 待测评 | — | — | 纯PPO基线，无MAR |
+| 3B-P1 | PerceptGate PPO | 3B | R_ans + R_fmt + R_len + R_perc | ✅ | GAE (γ=1.0, λ=0.95) | `examples/3b/train_ppo_3b.sh` | 🔄 运行中 | 🔲 待测评 | — | — | PPO + PerceptGate 奖励 |
+| 3B-R0 | REINFORCE++ Baseline | 3B | R_ans + R_fmt | ❌ | fixed (0.01) | `examples/3b/train_reinforce_pp_baseline_3b.sh` | 🔲 待运行 | 🔲 待测评 | — | — | 纯REINFORCE++基线，无MAR |
+| 3B-R1 | PerceptGate REINFORCE++ | 3B | R_ans + R_fmt + R_len + R_perc | ✅ | fixed (0.01) | `examples/3b/train_reinforce_pp_3b.sh` | 🔄 运行中 | 🔲 待测评 | — | — | REINFORCE++ + PerceptGate 奖励 |
 
 ### 7B 模型实验
 
@@ -253,13 +255,15 @@ worker.actor.model.model_path=/path/to/Qwen2.5-VL-7B-Instruct
 | E2 | Curriculum + R_ans + R_len | 7B | R_ans + R_fmt + R_len | ✅ | fixed (0.01) | `examples/7b/train_curriculum_ans_len_7b.sh` | ✅ 已完成 | ✅ 已测评 | — | — | 第二批：消融R_perc |
 | E3 | Curriculum + R_ans + R_perc | 7B | R_ans + R_fmt + R_perc | ✅ | fixed (0.01) | `examples/7b/train_curriculum_ans_perc_7b.sh` | ✅ 已完成 | ✅ 已测评 | — | — | 第二批：消融R_len |
 | S1 | Sensitivity: R_len↑ | 7B | R_ans + R_fmt + R_len(0.2) + R_perc(0.1) | ✅ | fixed (0.01) | `examples/7b/train_sensitivity_len02_7b.sh` | ✅ 已完成 |🔄 测评中 | — | — | — | 敏感度：R_len 增强 |
-| S2 | Sensitivity: R_perc↑ | 7B | R_ans + R_fmt + R_len(0.1) + R_perc(0.2) | ✅ | fixed (0.01) | `examples/7b/train_sensitivity_perc02_7b.sh` | 🔄 运行中|🔲 待测评 | — | — | — | 敏感度：R_perc 增强 |
+| S2 | Sensitivity: R_perc↑ | 7B | R_ans + R_fmt + R_len(0.1) + R_perc(0.2) | ✅ | fixed (0.01) | `examples/7b/train_sensitivity_perc02_7b.sh` | ✅ 已完成 |🔄 测评中 | — | — | — | 敏感度：R_perc 增强 |
 | E5 | Full - Curriculum | 7B | R_ans + R_fmt + R_len + R_perc | ❌ | fixed (0.01) | `examples/7b/train_full_no_curriculum_7b.sh` | ✅ 已完成 |🔄 测评中 | — | — | — | 消融课程采样的贡献（E4 vs E5） |
 | E6 | PerceptGate Full + Filtered | 7B | R_ans + R_fmt + R_len + R_perc | ✅ | fixed (0.01) | `examples/7b/train_filtered_full_7b.sh` | ✅ 已完成 |🔄 测评中 | — | — | — | 过滤数据集+完整PerceptGate |
 | M1 | MAR-full_topk (ViRL39K) | 7B | R_ans + R_fmt + R_len + R_perc | ✅ | fixed (0.01) | `examples/7b/train_full_topk_7b.sh` | ✅ 已完成 |🔄 测评中 | — | — | — | 完整ViRL39K + MAR_full_topk |
 | M2 | MAR-VSH (ViRL39K) | 7B | R_ans + R_fmt + R_len + R_perc | ✅ | fixed (0.01) | `examples/7b/train_vsh_7b.sh` | ✅ 已完成 |🔄 测评中 | — | — | — | 完整ViRL39K + MAR_VSH |
-| P1 | PerceptGate PPO | 7B | R_ans + R_fmt + R_len + R_perc | ✅ | GAE (γ=1.0, λ=0.95) | `examples/7b/train_ppo_7b.sh` | 🔲 待运行 | 🔲 待测评 | — | — | — | PPO + PerceptGate 奖励（需4张卡） |
-| R1 | PerceptGate REINFORCE++ | 7B | R_ans + R_fmt + R_len + R_perc | ✅ | fixed (0.01) | `examples/7b/train_reinforce_pp_7b.sh` | 🔲 待运行 | 🔲 待测评 | — | — | — | REINFORCE++ + PerceptGate 奖励 |
+| P0 | PPO Baseline | 7B | R_ans + R_fmt | ❌ | GAE (γ=1.0, λ=0.95) | `examples/7b/train_ppo_baseline_7b.sh` | 🔲 待运行 | 🔲 待测评 | — | — | — | 纯PPO基线，无MAR |
+| P1 | PerceptGate PPO | 7B | R_ans + R_fmt + R_len + R_perc | ✅ | GAE (γ=1.0, λ=0.95) | `examples/7b/train_ppo_7b.sh` | 🔄 运行中 | 🔲 待测评 | — | — | — | PPO + PerceptGate 奖励（需4张卡） |
+| R0 | REINFORCE++ Baseline | 7B | R_ans + R_fmt | ❌ | fixed (0.01) | `examples/7b/train_reinforce_pp_baseline_7b.sh` | 🔲 待运行 | 🔲 待测评 | — | — | — | 纯REINFORCE++基线，无MAR |
+| R1 | PerceptGate REINFORCE++ | 7B | R_ans + R_fmt + R_len + R_perc | ✅ | fixed (0.01) | `examples/7b/train_reinforce_pp_7b.sh` | 🔄 运行中 | 🔲 待测评 | — | — | — | REINFORCE++ + PerceptGate 奖励 |
 > 状态标记：🔲 待运行 · 🔄 运行中 · ✅ 已完成 · ❌ 训练终止
 ---
 
