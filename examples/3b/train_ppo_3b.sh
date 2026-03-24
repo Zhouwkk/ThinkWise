@@ -47,7 +47,7 @@ python -m verl.trainer.main \
     algorithm.adv_estimator=gae \
     algorithm.gamma=1.0 \
     algorithm.lam=0.95 \
-    algorithm.online_filtering=true \
+    algorithm.online_filtering=false \
     algorithm.hperc_filter_schedule=null \
     worker.rollout.n=1 \
     worker.critic.model.model_path=/data/zhouwenkang/models/Qwen2.5-VL-3B-Instruct \

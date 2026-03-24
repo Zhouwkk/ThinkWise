@@ -99,8 +99,13 @@ class DataParallelPPOCritic(BasePPOCritic):
                 **multi_modal_inputs,
                 use_cache=False,
             )  # prevent model thinks we are generating
-            values_rmpad = output.logits
-            values_rmpad = values_rmpad.squeeze(0)  # (total_nnz)
+            values_rmpad: torch.Tensor = output.logits
+            if values_rmpad.dim() != 3 or values_rmpad.size(-1) != 1:
+                raise RuntimeError(
+                    "Critic output should be (batch, seq, 1) for value prediction, "
+                    f"but got {tuple(values_rmpad.shape)}."
+                )
+            values_rmpad = values_rmpad.squeeze(0)  # (total_nnz, 1)
 
             # gather output if sp > 1
             if self.config.ulysses_size > 1:
@@ -118,7 +123,12 @@ class DataParallelPPOCritic(BasePPOCritic):
                 use_cache=False,
             )
             values: torch.Tensor = output.logits
-            values = values[:, -response_length - 1 : -1].squeeze(-1)  # (bsz, response_length, vocab_size)
+            if values.dim() != 3 or values.size(-1) != 1:
+                raise RuntimeError(
+                    "Critic output should be (batch, seq, 1) for value prediction, "
+                    f"but got {tuple(values.shape)}."
+                )
+            values = values[:, -response_length - 1 : -1].squeeze(-1)  # (bsz, response_length)
 
         return values
 

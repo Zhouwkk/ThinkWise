@@ -15,6 +15,7 @@
 The main entry point to run the PPO algorithm
 """
 
+from types import MethodType
 from typing import Literal, Optional, Union, cast
 
 import numpy as np
@@ -34,6 +35,7 @@ from transformers import (
     GenerationConfig,
     PreTrainedModel,
 )
+from transformers.modeling_outputs import TokenClassifierOutput
 from transformers.modeling_utils import no_init_weights
 
 from ..models.monkey_patch import apply_ulysses_patch
@@ -59,6 +61,59 @@ from .config import ActorConfig, CriticConfig, FSDPConfig, ModelConfig, OptimCon
 from .rollout import vLLMRollout
 from .sharding_manager import FSDPVLLMShardingManager
 from .sharding_manager.fsdp_ulysses import FSDPUlyssesShardingManager
+
+
+def _get_hidden_size_from_config(config: AutoConfig) -> int:
+    if hasattr(config, "hidden_size"):
+        return int(config.hidden_size)
+
+    text_config = getattr(config, "text_config", None)
+    if text_config is not None and hasattr(text_config, "hidden_size"):
+        return int(text_config.hidden_size)
+
+    raise ValueError(f"Cannot infer hidden size from config type: {type(config)}")
+
+
+def _critic_forward_with_value_head(
+    self: PreTrainedModel,
+    input_ids: torch.LongTensor,
+    attention_mask: Optional[torch.Tensor] = None,
+    position_ids: Optional[torch.Tensor] = None,
+    **kwargs,
+) -> TokenClassifierOutput:
+    if not hasattr(self, "model"):
+        raise AttributeError(
+            f"Critic model {type(self).__name__} does not expose `.model`; cannot compute token-wise values."
+        )
+
+    kwargs.pop("labels", None)
+    kwargs["use_cache"] = False
+    outputs = self.model(
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        position_ids=position_ids,
+        **kwargs,
+    )
+    hidden_states = outputs[0] if isinstance(outputs, tuple) else outputs.last_hidden_state
+    values = self.score(hidden_states)
+    return TokenClassifierOutput(logits=values)
+
+
+def _attach_critic_value_head(model: PreTrainedModel) -> None:
+    hidden_size = _get_hidden_size_from_config(model.config)
+    first_param = next(model.parameters())
+    score = torch.nn.Linear(
+        hidden_size,
+        1,
+        bias=False,
+        device=first_param.device,
+        dtype=first_param.dtype,
+    )
+    if hasattr(model, "_init_weights") and score.weight.device.type != "meta":
+        model._init_weights(score)
+
+    model.score = score
+    model.forward = MethodType(_critic_forward_with_value_head, model)
 
 
 class FSDPWorker(Worker):
@@ -223,6 +278,9 @@ class FSDPWorker(Worker):
 
         model = cast(PreTrainedModel, model)  # lint
         model.tie_weights()  # avoid hanging
+        if role == "critic":
+            # PPO critic needs token-wise scalar values, not vocab logits.
+            _attach_critic_value_head(model)
         model = model.to(torch_dtype)
         if model_config.enable_gradient_checkpointing:
             model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
