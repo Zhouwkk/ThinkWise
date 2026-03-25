@@ -38,8 +38,12 @@ def compute_score(
         response = re.sub(r"\s*(<|>|/)\s*", r"\1", reward_input["response"])
         acc = accuracy_reward(response, reward_input["ground_truth"])
         fmt = format_reward(response)
+        length = len(response)
 
         overall = acc + format_weight * fmt
+        
+        # Add a tiny global length penalty to prevent natural verbosity drift in PPO
+        overall -= 0.01 * (length / 4096.0)
 
         scores.append({
             "overall": float(overall),

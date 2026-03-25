@@ -40,6 +40,7 @@ GAMMA2 = 1.0         # R_perc negative penalty coefficient
 FORMAT_WEIGHT = 0.1  # format reward weight
 LEN_WEIGHT = 0.1     # length reward weight
 PERC_WEIGHT = 0.1    # perception reward weight
+REFERENCE_LEN = 1024 # reference length for PPO to break the batch-level feedback loop
 # ------------------------------------------------------------------------------
 
 
@@ -81,9 +82,10 @@ def compute_score(
     batch_acc = np.mean([d["acc"] for d in processed])
     d_global = 1.0 - batch_acc
 
-    # length baseline: batch-wide average length
-    batch_avg_len = float(np.mean([d["len"] for d in processed]))
-    batch_avg_len = max(batch_avg_len, 1.0)
+    # length baseline: use a fixed reference length for PPO to avoid positive feedback loops
+    # batch_avg_len = float(np.mean([d["len"] for d in processed]))
+    # batch_avg_len = max(batch_avg_len, 1.0)
+    ref_len = float(REFERENCE_LEN)
 
     # adaptive MAR threshold from all available MAR values in the batch
     mar_values = [d["mar"] for d in processed if d["mar"] is not None]
@@ -109,7 +111,7 @@ def compute_score(
         length = data["len"]
         mar = data["mar"]
 
-        rho = length / batch_avg_len
+        rho = length / ref_len
         d_i = d_global  # Scheme A: all samples share the batch-level difficulty estimate
 
         # R_ans
@@ -125,7 +127,8 @@ def compute_score(
             r_len = float(np.clip(1.0 - rho, -1.0, 1.0))
         elif mar_high and acc == 0.0:
             # State B: perception valid + wrong -> difficulty-weighted exploration
-            r_len = d_i * float(np.clip(rho - 1.0, 0.0, 1.0))
+            # Cap the exploration reward to prevent length explosion in PPO (n=1)
+            r_len = d_i * float(np.clip(rho - 1.0, 0.0, 0.5))
         elif mar_low and acc == 1.0:
             # State C: perception weak + correct -> difficulty-weighted penalty
             r_len = -((1.0 + d_i) / 2.0) * float(np.clip(rho - 1.0, 0.0, 1.0))
@@ -144,6 +147,9 @@ def compute_score(
 
         # total reward
         overall = r_ans + format_weight * fmt + len_weight * r_len + perc_weight * r_perc
+        
+        # Add a tiny global length penalty to prevent natural verbosity drift in PPO
+        overall -= 0.01 * (length / 4096.0)
 
         scores.append({
             "overall": float(overall),
