@@ -51,7 +51,7 @@ python -m verl.trainer.main \
     algorithm.kl_coef=0.05 \
     algorithm.online_filtering=true \
     algorithm.filter_key=accuracy \
-    'algorithm.dynamic_filter_schedule=[{epoch_ratio: 0.4, filter_low: 0.99, filter_high: 1.001}, {epoch_ratio: 1.0, filter_low: -0.001, filter_high: 1.001}]' \
+    'algorithm.dynamic_filter_schedule=[{epoch_ratio: 0.6, filter_low: 0.99, filter_high: 1.001}, {epoch_ratio: 1.0, filter_low: -0.001, filter_high: 1.001}]' \
     trainer.max_try_make_batch=80 \
     algorithm.hperc_filter_schedule=null \
     worker.rollout.n=1 \
