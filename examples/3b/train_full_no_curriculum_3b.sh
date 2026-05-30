@@ -1,7 +1,7 @@
 #!/bin/bash
 # PerceptGate Full (3B) — 无课程采样，消融课程采样的贡献
 
-export CUDA_VISIBLE_DEVICES=0,4
+export CUDA_VISIBLE_DEVICES=5,7
 export NCCL_P2P_DISABLE=1
 export TQDM_DISABLE=1
 export PYTHONWARNINGS="ignore::UserWarning:PIL"
@@ -46,5 +46,6 @@ python -m verl.trainer.main \
     trainer.save_limit=-1 \
     algorithm.online_filtering=false \
     algorithm.hperc_filter_schedule=null \
+    worker.rollout.disable_tqdm=true \
     worker.reward.reward_function=./examples/reward_function/perceptgate_reward.py:compute_score \
     "${RESUME_ARGS[@]}" 2>&1 | tee "${RUN_ROOT}/logs/train_full_no_curriculum_3b.log"

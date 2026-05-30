@@ -260,11 +260,31 @@ worker.actor.model.model_path=/path/to/Qwen2.5-VL-7B-Instruct
 | E6 | PerceptGate Full + Filtered | 7B | R_ans + R_fmt + R_len + R_perc | ✅ | fixed (0.01) | `examples/7b/train_filtered_full_7b.sh` | ✅ 已完成 | ✅ 已测评 | — | — | — | 过滤数据集+完整PerceptGate |
 | M1 | MAR-full_topk (ViRL39K) | 7B | R_ans + R_fmt + R_len + R_perc | ✅ | fixed (0.01) | `examples/7b/train_full_topk_7b.sh` | ✅ 已完成 | ✅ 已测评 | — | — | — | 完整ViRL39K + MAR_full_topk |
 | M2 | MAR-VSH (ViRL39K) | 7B | R_ans + R_fmt + R_len + R_perc | ✅ | fixed (0.01) | `examples/7b/train_vsh_7b.sh` | ✅ 已完成 | ✅ 已测评 | — | — | — | 完整ViRL39K + MAR_VSH |
-| P0 | PPO Baseline | 7B | R_ans + R_fmt | ❌ | GAE (γ=1.0, λ=0.95) | `examples/7b/train_ppo_baseline_7b.sh` | 🔲 待运行 | 🔲 待测评 | — | — | — | 纯PPO基线，无MAR |
-| P1 | PerceptGate PPO | 7B | R_ans + R_fmt + R_len + R_perc | ✅ | GAE (γ=1.0, λ=0.95) | `examples/7b/train_ppo_7b.sh` | 🔲 待运行 | 🔲 待测评 | — | — | — | PPO + PerceptGate 奖励（需4张卡） |
+| P0 | PPO Baseline | 7B | R_ans + R_fmt | ❌ | GAE (γ=1.0, λ=0.95) | `examples/7b/train_ppo_baseline_7b.sh` | ✅ 已完成 | ✅ 已测评 | — | — | — | 纯PPO基线，无MAR |
+| P1 | PerceptGate PPO | 7B | R_ans + R_fmt + R_len + R_perc | ✅ | GAE (γ=1.0, λ=0.95) | `examples/7b/train_ppo_7b.sh` | ✅ 已完成 | ✅ 已测评 | — | — | — | PPO + PerceptGate 奖励（需4张卡） |
 | R0 | REINFORCE++ Baseline | 7B | R_ans + R_fmt | ❌ | fixed (0.01) | `examples/7b/train_reinforce_pp_baseline_7b.sh` | ✅ 已完成 | ✅ 已测评 | — | — | — | 纯REINFORCE++基线，无MAR |
 | R1 | PerceptGate REINFORCE++ | 7B | R_ans + R_fmt + R_len + R_perc | ✅ | fixed (0.01) | `examples/7b/train_reinforce_pp_7b.sh` | ✅ 已完成 | ✅ 已测评 | — | — | — | REINFORCE++ + PerceptGate 奖励 |
-> 状态标记：🔲 待运行 · 🔄 运行中 · ✅ 已完成 · ❌ 训练终止
+
+### MM Rebuttal — Category 2（7B，待正式跑，共 3 组）
+  
+
+| ID | 实验名 | 奖励组成 | 课程采样 | 训练脚本 | 状态 | 测评 | val acc | val len | 备注 |
+|----|--------|---------|---------|---------|------|------|---------|---------|------|
+| 7B-C2-1 | R_ans + R_len（无课） | R_ans + R_fmt + R_len | ❌ | `examples/7b/train_ans_len_no_curriculum_7b.sh` | 🔲 待运行 | 🔲 | — | — | 对照 **E2**；ckpt `pg-ans-len-no-curriculum-7b` |
+| 7B-C2-2 | R_ans + R_perc（无课） | R_ans + R_fmt + R_perc | ❌ | `examples/7b/train_ans_perc_no_curriculum_7b.sh` | 🔲 待运行 | 🔲 | — | — | 对照 **E3**；ckpt `pg-ans-perc-no-curriculum-7b` |
+| 7B-C2-4 | GRPO + 课程（仅 R_ans） | R_ans + R_fmt | ✅ | `examples/7b/train_grpo_curriculum_7b.sh` | 🔲 待运行 | 🔲 | — | — | 对照 **E4**；ckpt `pg-grpo-curriculum-7b` |
+
+```bash
+# 短测
+FRESH_START=1 bash examples/7b/train_grpo_curriculum_7b.sh trainer.max_steps=2
+
+# 正式
+FRESH_START=1 bash examples/7b/train_ans_len_no_curriculum_7b.sh
+FRESH_START=1 bash examples/7b/train_ans_perc_no_curriculum_7b.sh
+FRESH_START=1 bash examples/7b/train_grpo_curriculum_7b.sh
+```
+
+> 状态标记：🔲 待运行 · 🔄 运行中 · ✅ 已完成 · ❌ 训练终止 · ⏭️ 可跳过
 ---
 
 ## 4. 消融对比逻辑
@@ -280,6 +300,24 @@ E3 (- R_len)         ← 去掉 R_len，验证其贡献（E4 vs E3）
 - **PerceptGate vs Baseline**：E4 vs E0
 - **R_perc 贡献**：E4 vs E2
 - **R_len 贡献**：E4 vs E3
+
+### 4.1 MM Rebuttal Category 2 对比逻辑（7B）
+
+```
+主文已有:  E0, E2, E3, E4, E5（E5 = full + 无课，替代原 C2-3）
+
+Category 2 新增（仅 3 组训练）:
+  7B-C2-1 vs E2   ans+len，关课 vs 有课
+  7B-C2-2 vs E3   ans+perc，关课 vs 有课
+  7B-C2-4 vs E4   仅 R_ans + 有课（Rebuttal P0）
+```
+
+| 对比 | 说明 |
+|------|------|
+| 7B-C2-1 vs E2 | `online_filtering`：❌ vs ✅，奖励同为 ans+len |
+| 7B-C2-2 vs E3 | `online_filtering`：❌ vs ✅，奖励同为 ans+perc |
+| E4 vs E5 | full + 有课 vs 无课（主文已有，rebuttal 直接引用） |
+| 7B-C2-4 vs E4 | 有课 + 仅 R_ans vs 有课 + full MAR 奖励 |
 
 ---
 
