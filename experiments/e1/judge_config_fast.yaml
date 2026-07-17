@@ -1,0 +1,15 @@
+# Faster E1 judge profile (use after --resume; already-labeled rows are kept).
+# Trade-off: slightly lower judge capacity vs 397B; usually fine for binary grounding.
+
+verifiers:
+  vlm_judge:
+    enabled: true
+    judge_model: "Qwen/Qwen3-VL-30B-A3B-Instruct"
+    api_base: "https://api.siliconflow.cn/v1"
+    api_key: null
+    max_concurrent: 4
+    timeout: 120
+    max_retries: 4
+    retry_backoff: 6.0
+    image_detail: "low"
+    max_evidence_chars: 1200

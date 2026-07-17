@@ -1,0 +1,19 @@
+# E1: VLM judge config (SiliconFlow OpenAI-compatible API)
+# Usage:
+#   export SILICONFLOW_API_KEY="..."
+#   conda activate fast_grpo
+#   python pilot_experiment/scripts/e1_mar_perception_validation.py \
+#     --phase label --sample 400 --config experiments/e1/judge_config.yaml
+
+verifiers:
+  vlm_judge:
+    enabled: true
+    judge_model: "Qwen/Qwen3.5-397B-A17B"
+    api_base: "https://api.siliconflow.cn/v1"
+    api_key: null
+    max_concurrent: 1          # try 2-3 if error rate stays <5%; 397B 易 503
+    timeout: 180
+    max_retries: 5
+    retry_backoff: 12.0
+    image_detail: "high"       # "low" ~20-40% faster, slightly weaker vision
+    max_evidence_chars: 0      # e.g. 1200 to cap thinking tokens sent to judge

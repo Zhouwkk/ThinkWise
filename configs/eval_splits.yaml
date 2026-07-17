@@ -1,0 +1,103 @@
+# Split-aware contamination check configuration.
+# Paths relative to --train-root / --eval-root unless absolute.
+
+train:
+  # Canonical training manifest (full ViRL39K train split used in GRPO runs).
+  path: "virl39k_train.json"
+  image_root: "."
+  # Optional full parquet with identical schema (fallback).
+  parquet_fallback: "39Krelease.parquet"
+
+eval_splits:
+  MathVista:
+    dataset_name: MathVista
+    source_dataset: MathVista
+    split: testmini
+    path: data/papo/AI4Math_MathVista.json
+    image_root: "."
+    notes: "PAPO-Eval ships 1000 samples (MathVista testmini-style subset)."
+
+  MathVerse:
+    dataset_name: MathVerse
+    source_dataset: MathVerse
+    split: test
+    path: data/papo/AI4Math_MathVerse.json
+    image_root: "."
+
+  MathVerse_v:
+    dataset_name: MathVerse_v
+    source_dataset: MathVerse
+    split: test
+    path: data/papo/AI4Math_MathVerse_vision_dependent.json
+    image_root: "."
+    notes: "Vision-dependent subset of MathVerse test."
+
+  Counting:
+    dataset_name: Counting
+    source_dataset: clevr_count_70k
+    split: test
+    path: data/papo/BUAADreamer_clevr_count_70k.json
+    image_root: "."
+
+  MMMU-Pro:
+    dataset_name: MMMU-Pro
+    source_dataset: MMMU_Pro
+    split: test
+    path: data/papo/MMMU_MMMU_Pro.json
+    image_root: "."
+
+  MathVision:
+    dataset_name: MathVision
+    source_dataset: MathVision
+    split: test
+    path: data/papo/MathLLMs_MathVision.json
+    image_root: "."
+    # Optional official test IDs (offline HF cache); enriches eval original_id by row index.
+    test_id_parquet: "/home/zhouwenkang/.cache/huggingface/hub/datasets--MathLLMs--MathVision/snapshots/555599a02b9c8654dca2822e3a3886289c9f2b45/data/test-00000-of-00001-3532b8d3f1b4047a.parquet"
+
+  MMK12:
+    dataset_name: MMK12
+    source_dataset: MMK12
+    split: test
+    path: data/papo/PAPO_MMK12.json
+    image_root: "."
+    test_id_parquet: "/home/zhouwenkang/.cache/huggingface/hub/datasets--FanqingM--MMK12/snapshots/f0ccebab1f87bb40e3d26373f598e8e48e179e35/data/test-00000-of-00001.parquet"
+    train_id_parquet_glob: "/home/zhouwenkang/.cache/huggingface/hub/datasets--FanqingM--MMK12/snapshots/f0ccebab1f87bb40e3d26373f598e8e48e179e35/data/train-*.parquet"
+
+  We-Math:
+    dataset_name: We-Math
+    source_dataset: We-Math
+    split: test
+    path: data/papo/We_Math.json
+    image_root: "."
+
+  Geo3k:
+    dataset_name: Geo3k
+    source_dataset: geometry3k
+    split: test
+    path: data/papo/hiyouga_geometry3k.json
+    image_root: "."
+
+  LogicVista:
+    dataset_name: LogicVista
+    source_dataset: LogicVista
+    split: test
+    path: data/papo/lscpku_LogicVista.json
+    image_root: "."
+
+# ViRL39K `source` -> canonical source_dataset for metadata matching.
+source_dataset_aliases:
+  MMK12: MMK12
+  MMK12Converted: MMK12
+  geoqa_plus: Geo3k
+  geoqa_plusConverted: Geo3k
+  dvqa: Counting
+  chartqa: MathVista
+  MMMath: MathVision
+  Processed: null
+  DeepScaleR: null
+  M3CoT: null
+  K12: MMK12
+  R1OneVision: null
+  ScienceQA: null
+  ai2d: null

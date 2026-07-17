@@ -19,6 +19,23 @@ PAPO-Eval/
 MAR_INTEGRATION_V2.md
 perceptgate.md
 
+# Paper writing (local only)
+paper/
+outline/
+references/
+outputs/
+rebuttal_draft.md
+rebuttal_response_cn.md
+*.pdf
+efficiency_accuracy_paper*.png
+Untitled
+
+# Local experiment artifacts (keep scripts/configs only)
+experiments/**/*.jsonl
+experiments/**/*.json
+experiments/**/figures/
+experiments/**/smoke/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -30,7 +47,10 @@ build/
 .env
 .venv/
 
-# Editor
+# Editor / local tooling
 .DS_Store
 .idea/
 .vscode/
+.cursor/
+.kiro/
+.hf_cache/
