@@ -1,5 +1,5 @@
 #!/bin/bash
-# PerceptGate PPO (7B): GAE advantage estimator + batch-level reward statistics
+# ThinkWise PPO (7B): GAE advantage estimator + batch-level reward statistics
 
 # Physical GPUs 1,2,4,5 (processes see them as cuda:0..3) — align with train_ppo_baseline_7b.sh
 export CUDA_VISIBLE_DEVICES=1,2,4,5
@@ -14,7 +14,7 @@ export NCCL_SOCKET_IFNAME=ens12f1np1
 export PYTORCH_ALLOC_CONF=expandable_segments:True
 
 RUN_ROOT=/data-store/zhouwenkang/fast_runs
-CHECKPOINT_DIR=${RUN_ROOT}/checkpoints/perceptgate-7b/pg-ppo-7b
+CHECKPOINT_DIR=${RUN_ROOT}/checkpoints/thinkwise-7b/tw-ppo-7b
 mkdir -p "${RUN_ROOT}/hf_cache" "${RUN_ROOT}/pip_cache" "${RUN_ROOT}/tensorboard" "${RUN_ROOT}/wandb" "${RUN_ROOT}/logs" "${CHECKPOINT_DIR}"
 
 export HF_HOME=${RUN_ROOT}/hf_cache
@@ -39,11 +39,11 @@ else
 fi
 
 python -m verl.trainer.main \
-    config=examples/config_perceptgate.yaml \
+    config=examples/config_thinkwise.yaml \
     trainer.n_gpus_per_node=4 \
     trainer.save_checkpoint_path=${CHECKPOINT_DIR} \
-    trainer.project_name=perceptgate-mar \
-    trainer.experiment_name=pg-ppo-7b \
+    trainer.project_name=thinkwise-mar \
+    trainer.experiment_name=tw-ppo-7b \
     trainer.save_limit=-1 \
     algorithm.adv_estimator=gae \
     algorithm.gamma=0.99 \
@@ -70,5 +70,5 @@ python -m verl.trainer.main \
     worker.critic.micro_batch_size_per_device_for_experience=1 \
     worker.critic.cliprange_value=0.2 \
     worker.critic.ppo_epochs=2 \
-    worker.reward.reward_function=./examples/reward_function/perceptgate_reward_ppo.py:compute_score \
+    worker.reward.reward_function=./examples/reward_function/thinkwise_reward_ppo.py:compute_score \
     "${RESUME_ARGS[@]}" 2>&1 | tee "${RUN_ROOT}/logs/train_ppo_7b.log"

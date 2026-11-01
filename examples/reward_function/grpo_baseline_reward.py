@@ -4,7 +4,7 @@ Standard GRPO Baseline Reward Function
 R_total = R_ans + 0.1 * R_fmt - 0.01 * (len / 4096)
 
 纯正确性奖励 + 格式奖励 + 极轻的全局长度惩罚（抑制 PPO 下冗长漂移），无感知奖励。
-作为 baseline 与 PerceptGate 各消融实验对比。
+作为 baseline 与 ThinkWise 各消融实验对比。
 """
 
 import re

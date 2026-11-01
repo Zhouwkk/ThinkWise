@@ -1,6 +1,6 @@
-# PerceptGate Ablation: curriculum + R_ans + R_len (no R_perc)
-# LEN_WEIGHT=0.5, PERC_WEIGHT=0
-# 与完整版 perceptgate_reward.py 相同，仅关闭 R_perc
+# ThinkWise Ablation: curriculum + R_ans + R_perc (no R_len)
+# LEN_WEIGHT=0, PERC_WEIGHT=0.1
+# 用于验证 R_len 的贡献
 
 import re
 from typing import Any
@@ -11,9 +11,11 @@ from mathruler.grader import extract_boxed_content, grade_answer
 
 K_ROLLOUTS = 8
 ALPHA = 1.0
+GAMMA1 = 1.0
+GAMMA2 = 1.0
 FORMAT_WEIGHT = 0.1
-LEN_WEIGHT = 0.1
-PERC_WEIGHT = 0.0  # 关闭 R_perc
+LEN_WEIGHT = 0.0    # 关闭 R_len
+PERC_WEIGHT = 0.1
 
 
 def format_reward(response: str) -> float:
@@ -26,9 +28,12 @@ def accuracy_reward(response: str, ground_truth: str) -> float:
     return 1.0 if grade_answer(answer, ground_truth) else 0.0
 
 
-def compute_score(reward_inputs: list[dict[str, Any]], format_weight: float = FORMAT_WEIGHT) -> list[dict[str, float]]:
+def compute_score(
+    reward_inputs: list[dict[str, Any]],
+    format_weight: float = FORMAT_WEIGHT,
+) -> list[dict[str, float]]:
     if not isinstance(reward_inputs, list):
-        raise ValueError("Please use `reward_type=batch` for PerceptGate reward function.")
+        raise ValueError("Please use `reward_type=batch` for ThinkWise reward function.")
 
     num_responses = len(reward_inputs)
     if num_responses == 0:
@@ -85,14 +90,15 @@ def compute_score(reward_inputs: list[dict[str, Any]], format_weight: float = FO
             tau = None
         problem_tau_mar.append(tau)
 
-    # ── 每道题内部的平均长度（group 级别，与 τ_mar、d_i 对齐） ──
-    num_problems = len(problem_pass_rates)
-    problem_avg_len = []
-    for i in range(num_problems):
-        start = i * K_ROLLOUTS
-        end = min(start + K_ROLLOUTS, num_responses)
-        lens = [processed[j]["len"] for j in range(start, end)]
-        problem_avg_len.append(np.mean(lens) if lens else 1.0)
+    # MAR 归一化到 [0, 1]
+    if problem_mar_lists and any(problem_mar_lists):
+        all_mars = [m for mar_list in problem_mar_lists for m in mar_list]
+        mar_min = min(all_mars)
+        mar_max = max(all_mars)
+        mar_range = mar_max - mar_min if mar_max > mar_min else 1.0
+    else:
+        mar_min = 0.0
+        mar_range = 1.0
 
     scores = []
 
@@ -100,40 +106,29 @@ def compute_score(reward_inputs: list[dict[str, Any]], format_weight: float = FO
         problem_idx = idx // K_ROLLOUTS
         acc = data["acc"]
         fmt = data["fmt"]
-        length = data["len"]
         mar = data["mar"]
         d_i = problem_difficulty[problem_idx] if problem_idx < len(problem_difficulty) else 0.5
         tau_mar = problem_tau_mar[problem_idx] if problem_idx < len(problem_tau_mar) else None
 
-        rho = length / problem_avg_len[problem_idx] if problem_avg_len[problem_idx] > 0 else 1.0
-
         r_ans = acc
 
-        # R_len（四象限）
-        r_len = 0.0
-        mar_high = (mar is not None and tau_mar is not None and mar > tau_mar)
-        mar_low = (mar is not None and tau_mar is not None and mar <= tau_mar)
-
-        if mar_high and acc == 1.0:
-            r_len = np.clip(1.0 - rho, -1.0, 1.0)
-        elif mar_high and acc == 0.0:
-            r_len = d_i * np.clip(rho - 1.0, 0.0, 1.0)
-        elif mar_low and acc == 1.0:
-            r_len = -((1.0 + d_i) / 2.0) * np.clip(rho - 1.0, 0.0, 1.0)
-        else:
-            r_len = 0.0
-
-        # R_perc = 0（本消融关闭）
+        # R_perc（感知奖惩，仅答对时给正分）
         r_perc = 0.0
+        if mar is not None and tau_mar is not None:
+            mar_normalized = (mar - mar_min) / mar_range
+            if mar > tau_mar and acc == 1.0:
+                r_perc = GAMMA1 * mar_normalized
+            elif mar <= tau_mar and acc == 1.0:
+                r_perc = -GAMMA2 * ((tau_mar - mar_min) / mar_range)
 
-        overall = r_ans + format_weight * fmt + LEN_WEIGHT * r_len
+        overall = r_ans + format_weight * fmt + PERC_WEIGHT * r_perc
 
         scores.append({
             "overall": float(overall),
             "accuracy": float(acc),
             "format": float(fmt),
-            "r_len": float(r_len),
-            "r_perc": 0.0,
+            "r_len": 0.0,
+            "r_perc": float(r_perc),
             "mar": float(mar) if mar is not None else 0.0,
             "mar_available": float(mar_available),
             "difficulty": float(d_i),

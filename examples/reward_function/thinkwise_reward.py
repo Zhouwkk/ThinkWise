@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-PerceptGate Reward Function (MAR-based, 方案B)
+ThinkWise Reward Function (MAR-based)
 
 奖励结构：
     R_total = R_ans + R_len + R_perc
@@ -63,7 +63,7 @@ def accuracy_reward(response: str, ground_truth: str) -> float:
 def compute_score(reward_inputs: list[dict[str, Any]], format_weight: float = FORMAT_WEIGHT,
                   len_weight: float = LEN_WEIGHT, perc_weight: float = PERC_WEIGHT) -> list[dict[str, float]]:
     if not isinstance(reward_inputs, list):
-        raise ValueError("Please use `reward_type=batch` for PerceptGate reward function.")
+        raise ValueError("Please use `reward_type=batch` for ThinkWise reward function.")
 
     num_responses = len(reward_inputs)
     if num_responses == 0:

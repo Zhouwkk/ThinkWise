@@ -1,5 +1,5 @@
-# PerceptGate 超参搜索: PERC_WEIGHT=0.2
-# 与 perceptgate_reward.py 完全一致，仅 PERC_WEIGHT 从 0.1 调至 0.2
+# ThinkWise 超参搜索: PERC_WEIGHT=0.2
+# 与 thinkwise_reward.py 完全一致，仅 PERC_WEIGHT 从 0.1 调至 0.2
 
 import re
 from typing import Any
@@ -32,7 +32,7 @@ def compute_score(
     format_weight: float = FORMAT_WEIGHT,
 ) -> list[dict[str, float]]:
     if not isinstance(reward_inputs, list):
-        raise ValueError("Please use `reward_type=batch` for PerceptGate reward function.")
+        raise ValueError("Please use `reward_type=batch` for ThinkWise reward function.")
 
     num_responses = len(reward_inputs)
     if num_responses == 0:

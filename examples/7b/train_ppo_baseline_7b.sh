@@ -14,7 +14,7 @@ export NCCL_SOCKET_IFNAME=ens12f1np1
 export PYTORCH_ALLOC_CONF=expandable_segments:True
 
 RUN_ROOT=/data-store/zhouwenkang/fast_runs
-CHECKPOINT_DIR=${RUN_ROOT}/checkpoints/perceptgate-7b/ppo-baseline-7b
+CHECKPOINT_DIR=${RUN_ROOT}/checkpoints/thinkwise-7b/ppo-baseline-7b
 mkdir -p "${RUN_ROOT}/hf_cache" "${RUN_ROOT}/pip_cache" "${RUN_ROOT}/tensorboard" "${RUN_ROOT}/wandb" "${RUN_ROOT}/logs" "${CHECKPOINT_DIR}"
 
 export HF_HOME=${RUN_ROOT}/hf_cache
@@ -39,10 +39,10 @@ else
 fi
 
 python -m verl.trainer.main \
-    config=examples/config_perceptgate.yaml \
+    config=examples/config_thinkwise.yaml \
     trainer.n_gpus_per_node=4 \
     trainer.save_checkpoint_path=${CHECKPOINT_DIR} \
-    trainer.project_name=perceptgate-mar \
+    trainer.project_name=thinkwise-mar \
     trainer.experiment_name=ppo-baseline-7b \
     trainer.save_limit=-1 \
     algorithm.adv_estimator=gae \

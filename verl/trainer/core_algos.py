@@ -224,7 +224,7 @@ class GroupAccuracyBasedKLController(KLController):
 class PerceptionAwareKLController(KLController):
     """Perception-aware KL controller based on dual-entropy (H_perc, H_ans).
     
-    Per the revised PerceptGate proposal §3.2:
+    The controller uses the following dual-entropy rules:
     - H_perc >= tau_perc (perception collapse): β = β_max (tighten, consistent with reward suppression)
     - H_perc < tau_perc (perception stable): β = β_min + (β_max - β_min) * (1 - norm(H_ans))
       where norm(H_ans) = H_ans / 0.25, so higher H_ans → lower β → more exploration

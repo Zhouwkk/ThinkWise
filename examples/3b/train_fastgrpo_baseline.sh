@@ -22,7 +22,6 @@ export NCCL_SOCKET_IFNAME=ens12f1np1
 # 统一把训练产物写到 /data-store，避免 /data 分区写满
 RUN_ROOT=/data-store/zhouwenkang/fast_runs
 CHECKPOINT_DIR=${RUN_ROOT}/checkpoints/fast-grpo/fg-step3-3b-baseline
-MIGRATION_CKPT=/data/zhouwenkang/FAST/checkpoints/perceptgate/pg-step2-3b/global_step_20
 
 mkdir -p "${RUN_ROOT}/hf_cache" "${RUN_ROOT}/pip_cache" "${RUN_ROOT}/tensorboard" "${RUN_ROOT}/wandb" "${RUN_ROOT}/logs" "${CHECKPOINT_DIR}"
 
@@ -44,13 +43,13 @@ else
         )
     else
         RESUME_ARGS=(
-            "trainer.load_checkpoint_path=${MIGRATION_CKPT}"
+            "trainer.load_checkpoint_path=null"
             "trainer.find_last_checkpoint=false"
         )
     fi
 fi
 
-# Keep data/batch/length settings aligned with PerceptGate config,
+# Keep data/batch/length settings aligned with ThinkWise config,
 # only switch method-specific components to FAST-GRPO baseline.
 METHOD_ARGS=(
     "worker.reward.reward_function=./examples/reward_function/thinking_reward.py:compute_score"
@@ -61,7 +60,7 @@ METHOD_ARGS=(
 )
 
 python -m verl.trainer.main \
-    config=examples/config_perceptgate.yaml \
+    config=examples/config_thinkwise.yaml \
     trainer.n_gpus_per_node=2 \
     trainer.save_checkpoint_path=${CHECKPOINT_DIR} \
     trainer.save_limit=-1 \

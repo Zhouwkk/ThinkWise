@@ -100,7 +100,7 @@ def main():
 
     print(f"\nDone! Saved {len(converted)} samples to {json_path}")
     print(f"Images saved to {image_dir}/")
-    print(f"\nTo use in config_perceptgate.yaml:")
+    print(f"\nTo use in config_thinkwise.yaml:")
     print(f"  val_files:")
     print(f"    - {json_path}")
     print(f"  (image_dir for val is: {output_dir})")

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-PerceptGate Reward Function -- PPO version (Scheme A: batch-level global statistics)
+ThinkWise Reward Function -- PPO version (batch-level global statistics)
 
 Differences from the GRPO version:
   - PPO samples one trajectory per question (rollout.n=1), so group-level statistics
@@ -61,7 +61,7 @@ def compute_score(
     perc_weight: float = PERC_WEIGHT,
 ) -> list[dict[str, float]]:
     if not isinstance(reward_inputs, list):
-        raise ValueError("Please use `reward_type=batch` for PerceptGate PPO reward function.")
+        raise ValueError("Please use `reward_type=batch` for ThinkWise PPO reward function.")
 
     num_responses = len(reward_inputs)
     if num_responses == 0:

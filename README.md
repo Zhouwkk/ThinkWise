@@ -43,7 +43,7 @@ $$
 R_{\mathrm{total}} = R_{\mathrm{ans}} + \gamma_{\mathrm{len}}R_{\mathrm{len}} + \gamma_{\mathrm{perc}}R_{\mathrm{perc}}.
 $$
 
-The current implementation also includes an auxiliary format reward. Existing filenames, configuration keys, and experiment names retain the earlier **PerceptGate** name; the commands below use those names as they exist in the repository.
+The current implementation also includes an auxiliary format reward.
 
 ## Installation
 
@@ -114,7 +114,7 @@ Each `<image>` placeholder corresponds to an image in the list. Relative image p
 
 ### Configure Paths
 
-Edit [examples/config_perceptgate.yaml](examples/config_perceptgate.yaml) for your environment:
+Edit [examples/config_thinkwise.yaml](examples/config_thinkwise.yaml) for your environment:
 
 ```yaml
 data:
@@ -159,7 +159,7 @@ The existing shell scripts do not forward additional command-line arguments. To 
 
 ```bash
 CUDA_VISIBLE_DEVICES=0,1 python -m verl.trainer.main \
-  config=examples/config_perceptgate.yaml \
+  config=examples/config_thinkwise.yaml \
   algorithm.online_filtering=true \
   algorithm.hperc_filter_schedule=null \
   trainer.n_gpus_per_node=2 \
@@ -204,7 +204,7 @@ Replace the path with the actor directory of the checkpoint you want to export. 
 ThinkWise/
 ├── assets/                         # Framework figure
 ├── examples/
-│   ├── config_perceptgate.yaml      # Shared training configuration
+│   ├── config_thinkwise.yaml      # Shared training configuration
 │   ├── 3b/                         # 3B training and ablation scripts
 │   ├── 7b/                         # 7B training and ablation scripts
 │   ├── format_prompt/              # Prompt templates

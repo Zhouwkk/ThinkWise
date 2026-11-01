@@ -1,5 +1,5 @@
 #!/bin/bash
-# PerceptGate Full (3B) — 无课程采样，消融课程采样的贡献
+# ThinkWise Full (3B) — 无课程采样，消融课程采样的贡献
 
 export CUDA_VISIBLE_DEVICES=5,7
 export NCCL_P2P_DISABLE=1
@@ -13,7 +13,7 @@ export NCCL_SOCKET_IFNAME=ens12f1np1
 export PYTORCH_ALLOC_CONF=expandable_segments:True
 
 RUN_ROOT=/data-store/zhouwenkang/fast_runs
-CHECKPOINT_DIR=${RUN_ROOT}/checkpoints/perceptgate/pg-full-no-curriculum-3b
+CHECKPOINT_DIR=${RUN_ROOT}/checkpoints/thinkwise/tw-full-no-curriculum-3b
 mkdir -p "${RUN_ROOT}/hf_cache" "${RUN_ROOT}/pip_cache" "${RUN_ROOT}/tensorboard" "${RUN_ROOT}/wandb" "${RUN_ROOT}/logs" "${CHECKPOINT_DIR}"
 
 export HF_HOME=${RUN_ROOT}/hf_cache
@@ -38,14 +38,14 @@ else
 fi
 
 python -m verl.trainer.main \
-    config=examples/config_perceptgate.yaml \
+    config=examples/config_thinkwise.yaml \
     trainer.n_gpus_per_node=2 \
     trainer.save_checkpoint_path=${CHECKPOINT_DIR} \
-    trainer.project_name=perceptgate-mar \
-    trainer.experiment_name=pg-full-no-curriculum-3b \
+    trainer.project_name=thinkwise-mar \
+    trainer.experiment_name=tw-full-no-curriculum-3b \
     trainer.save_limit=-1 \
     algorithm.online_filtering=false \
     algorithm.hperc_filter_schedule=null \
     worker.rollout.disable_tqdm=true \
-    worker.reward.reward_function=./examples/reward_function/perceptgate_reward.py:compute_score \
+    worker.reward.reward_function=./examples/reward_function/thinkwise_reward.py:compute_score \
     "${RESUME_ARGS[@]}" 2>&1 | tee "${RUN_ROOT}/logs/train_full_no_curriculum_3b.log"

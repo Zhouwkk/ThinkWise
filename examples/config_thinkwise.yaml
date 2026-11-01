@@ -132,13 +132,13 @@ worker:
 
   reward:
     reward_type: batch
-    reward_function: ./examples/reward_function/perceptgate_reward.py:compute_score
+    reward_function: ./examples/reward_function/thinkwise_reward.py:compute_score
 
 trainer:
   total_epochs: 1
   max_steps: null
-  project_name: perceptgate
-  experiment_name: pg-step3-3b
+  project_name: thinkwise
+  experiment_name: tw-step3-3b
   logger: ["file", "tensorboard", "wandb"]
   nnodes: 1
   n_gpus_per_node: 4

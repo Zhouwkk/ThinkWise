@@ -1,4 +1,4 @@
-# PerceptGate Ablation: curriculum + R_ans only (no R_len, no R_perc)
+# ThinkWise Ablation: curriculum + R_ans only (no R_len, no R_perc)
 # LEN_WEIGHT=0, PERC_WEIGHT=0
 
 import re
@@ -24,7 +24,7 @@ def accuracy_reward(response: str, ground_truth: str) -> float:
 
 def compute_score(reward_inputs: list[dict[str, Any]], format_weight: float = FORMAT_WEIGHT) -> list[dict[str, float]]:
     if not isinstance(reward_inputs, list):
-        raise ValueError("Please use `reward_type=batch` for PerceptGate reward function.")
+        raise ValueError("Please use `reward_type=batch` for ThinkWise reward function.")
 
     num_responses = len(reward_inputs)
     if num_responses == 0:
