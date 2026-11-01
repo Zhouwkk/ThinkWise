@@ -8,8 +8,8 @@
 
 用法:
   python scripts/prepare_virl39k.py \
-      --input /data/zhouwenkang/FAST/train_data/ViRL39K/39Krelease.parquet \
-      --output /data/zhouwenkang/FAST/train_data/ViRL39K/virl39k_train.json
+      --input /path/to/ViRL39K/39Krelease.parquet \
+      --output /path/to/ViRL39K/virl39k_train.json
 """
 
 import json

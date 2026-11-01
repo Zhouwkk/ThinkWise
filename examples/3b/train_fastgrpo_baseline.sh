@@ -6,29 +6,24 @@ set -x
 # ray stop --force 2>/dev/null
 # sleep 3
 
-# 使用 GPU 2,6（GPU 3 硬件异常，无法创建 CUDA context）
-export CUDA_VISIBLE_DEVICES=0,2
+export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1}"
+GPU_IDS=(${CUDA_VISIBLE_DEVICES//,/ })
+N_GPUS="${N_GPUS:-${#GPU_IDS[@]}}"
 
-# NCCL 设置：GPU 2,6 跨 NUMA（SYS），无 NVLink，无 InfiniBand
-export NCCL_P2P_DISABLE=1
-export TQDM_DISABLE=1
-export PYTHONWARNINGS="ignore::UserWarning:PIL"
-export RAY_DEDUP_LOGS=1
-export NCCL_IB_DISABLE=1
-export NCCL_DEBUG=WARN
-export NCCL_SHM_DISABLE=0
-export NCCL_SOCKET_IFNAME=ens12f1np1
+export TQDM_DISABLE="${TQDM_DISABLE:-1}"
+export PYTHONWARNINGS="${PYTHONWARNINGS:-ignore::UserWarning:PIL}"
+export RAY_DEDUP_LOGS="${RAY_DEDUP_LOGS:-1}"
+export NCCL_DEBUG="${NCCL_DEBUG:-WARN}"
 
-# 统一把训练产物写到 /data-store，避免 /data 分区写满
-RUN_ROOT=/data-store/zhouwenkang/fast_runs
-CHECKPOINT_DIR=${RUN_ROOT}/checkpoints/fast-grpo/fg-step3-3b-baseline
+RUN_ROOT="${RUN_ROOT:-./runs}"
+CHECKPOINT_DIR="${CHECKPOINT_DIR:-${RUN_ROOT}/checkpoints/fast-grpo/fg-step3-3b-baseline}"
 
 mkdir -p "${RUN_ROOT}/hf_cache" "${RUN_ROOT}/pip_cache" "${RUN_ROOT}/tensorboard" "${RUN_ROOT}/wandb" "${RUN_ROOT}/logs" "${CHECKPOINT_DIR}"
 
-export HF_HOME=${RUN_ROOT}/hf_cache
-export PIP_CACHE_DIR=${RUN_ROOT}/pip_cache
-export TENSORBOARD_DIR=${RUN_ROOT}/tensorboard
-export WANDB_DIR=${RUN_ROOT}/wandb
+export HF_HOME="${HF_HOME:-${RUN_ROOT}/hf_cache}"
+export PIP_CACHE_DIR="${PIP_CACHE_DIR:-${RUN_ROOT}/pip_cache}"
+export TENSORBOARD_DIR="${TENSORBOARD_DIR:-${RUN_ROOT}/tensorboard}"
+export WANDB_DIR="${WANDB_DIR:-${RUN_ROOT}/wandb}"
 
 if [ "${FRESH_START:-0}" = "1" ]; then
     # Force a fresh run: do not load any previous checkpoint.
@@ -61,8 +56,9 @@ METHOD_ARGS=(
 
 python -m verl.trainer.main \
     config=examples/config_thinkwise.yaml \
-    trainer.n_gpus_per_node=2 \
-    trainer.save_checkpoint_path=${CHECKPOINT_DIR} \
+    "trainer.n_gpus_per_node=${N_GPUS}" \
+    "trainer.save_checkpoint_path=${CHECKPOINT_DIR}" \
     trainer.save_limit=-1 \
     "${METHOD_ARGS[@]}" \
-    "${RESUME_ARGS[@]}" 2>&1 | tee "${RUN_ROOT}/logs/train_fastgrpo_baseline_2gpu.log"
+    "${RESUME_ARGS[@]}" \
+    "$@" 2>&1 | tee "${RUN_ROOT}/logs/train_fastgrpo_baseline_2gpu.log"

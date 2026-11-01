@@ -114,36 +114,46 @@ Each `<image>` placeholder corresponds to an image in the list. Relative image p
 
 ### Configure Paths
 
-Edit [examples/config_thinkwise.yaml](examples/config_thinkwise.yaml) for your environment:
+Run commands from the repository root. Set paths through environment variables, or edit [examples/config_thinkwise.yaml](examples/config_thinkwise.yaml):
 
-```yaml
-data:
-  train_files: /path/to/ViRL39K/virl39k_train.json
-  val_files:
-    - /path/to/MMK12/mmk12_test.json
-  image_dir: /path/to/ViRL39K
-
-worker:
-  actor:
-    model:
-      model_path: /path/to/Qwen2.5-VL-3B-Instruct
+```bash
+export TRAIN_FILE=/path/to/ViRL39K/virl39k_train.json
+export VAL_FILE=/path/to/MMK12/mmk12_test.json
+export IMAGE_DIR=/path/to/ViRL39K
+export RUN_ROOT=/path/to/thinkwise-runs
 ```
+
+| Variable | Default / purpose |
+| --- | --- |
+| `TRAIN_FILE` | `./data/ViRL39K/virl39k_train.json`; filtered and MAR-variant scripts retain their own dataset filename defaults |
+| `VAL_FILE` | `./data/MMK12/mmk12_test.json` |
+| `IMAGE_DIR` | `./data/ViRL39K`, the parent of `images/` |
+| `MODEL_PATH` | `Qwen/Qwen2.5-VL-3B-Instruct`, or `Qwen/Qwen2.5-VL-7B-Instruct` in 7B scripts; may also be a local model directory |
+| `CRITIC_MODEL_PATH` | Same model as the actor, unless set separately for PPO |
+| `RUN_ROOT` | `./runs`; logs, caches, and checkpoints are placed below it |
+| `CHECKPOINT_DIR` | The selected script's experiment-specific checkpoint directory under `RUN_ROOT` |
+| `CUDA_VISIBLE_DEVICES` | Consecutive GPU IDs starting at zero; the default count matches the script's existing worker count |
+| `N_GPUS` | Number of comma-separated IDs in `CUDA_VISIBLE_DEVICES`; overrides `trainer.n_gpus_per_node` |
+
+`TRAIN_FILE` overrides the default in all scripts. Without it, filtered scripts use `virl39k_filtered.json`, and the 7B full-topk / VSH scripts use `virl39k.json`, under `./data/ViRL39K`.
 
 The full ThinkWise scripts enable curriculum sampling and use the MAR-based reward. Launching the YAML alone does not enable curriculum sampling, so use the full scripts below or explicitly set `algorithm.online_filtering=true`.
 
 ### Full ThinkWise: 3B and 7B
 
-Before running, edit the chosen script's `RUN_ROOT`, `CUDA_VISIBLE_DEVICES`, `trainer.n_gpus_per_node`, and any model-path override. Adapt the script's NCCL settings, including `NCCL_SOCKET_IFNAME`, to your server.
+The following commands use the paths set above and select the base model appropriate to each script. Set `MODEL_PATH` to use a local model directory.
 
 ```bash
-# Qwen2.5-VL-3B-Instruct
-FRESH_START=1 bash examples/3b/train_curriculum_full.sh
+# Qwen2.5-VL-3B-Instruct, two GPUs
+CUDA_VISIBLE_DEVICES=0,1 FRESH_START=1 \
+  bash examples/3b/train_curriculum_full.sh
 
-# Qwen2.5-VL-7B-Instruct
-FRESH_START=1 bash examples/7b/train_curriculum_full_7b.sh
+# Qwen2.5-VL-7B-Instruct, four GPUs
+CUDA_VISIBLE_DEVICES=0,1,2,3 FRESH_START=1 \
+  bash examples/7b/train_curriculum_full_7b.sh
 ```
 
-The supplied 3B full script selects two GPUs; the 7B full script selects four. Adjust GPU IDs and GPU count together for your hardware and memory budget. The 7B script overrides the actor model path, so update that path in the script as well.
+NCCL selects network interfaces and transport settings automatically. If your server requires specific settings, export `NCCL_SOCKET_IFNAME`, `NCCL_P2P_DISABLE`, `NCCL_IB_DISABLE`, or `NCCL_SHM_DISABLE` before launching; scripts preserve these values. `NCCL_DEBUG` defaults to `WARN`. Existing `HF_HOME`, `PIP_CACHE_DIR`, `TENSORBOARD_DIR`, and `WANDB_DIR` values are also respected.
 
 `FRESH_START=1` starts from the configured base model. Without it, these full scripts resume when `checkpoint_tracker.json` exists in their checkpoint directory:
 
@@ -155,7 +165,13 @@ Logs are written under `${RUN_ROOT}/logs`, and checkpoints under the script's `C
 
 ### Override Configuration Directly
 
-The existing shell scripts do not forward additional command-line arguments. To override settings from the command line, invoke the Python entry point directly. For example, after configuring the paths above:
+All training scripts forward additional configuration arguments after their presets, so command-line values take precedence:
+
+```bash
+FRESH_START=1 bash examples/3b/train_curriculum_full.sh trainer.max_steps=2
+```
+
+You can also invoke the Python entry point directly after configuring the paths above:
 
 ```bash
 CUDA_VISIBLE_DEVICES=0,1 python -m verl.trainer.main \
@@ -185,7 +201,7 @@ This limits training updates to two steps; it still performs the configured data
 | ThinkWise + PPO | `examples/3b/train_ppo_3b.sh` | `examples/7b/train_ppo_7b.sh` |
 | ThinkWise + REINFORCE++ | `examples/3b/train_reinforce_pp_3b.sh` | `examples/7b/train_reinforce_pp_7b.sh` |
 
-Configure paths and hardware settings separately in each script you run. The current reward implementation assumes eight contiguous rollouts per question, matching `worker.rollout.n: 8` in the supplied configuration.
+The environment variables above apply to all scripts. Each entry point retains its method-specific training settings. The current reward implementation assumes eight contiguous rollouts per question, matching `worker.rollout.n: 8` in the supplied configuration.
 
 ### Export a Training Checkpoint
 

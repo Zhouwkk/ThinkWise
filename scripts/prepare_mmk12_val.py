@@ -15,7 +15,7 @@ ThinkWise dataset.py 期望格式:
 
 用法:
   python scripts/prepare_mmk12_val.py \
-      --output_dir /data/zhouwenkang/FAST/val_data/MMK12 \
+      --output_dir /path/to/MMK12 \
       --hf_token <your_token>  # 可选
 """
 

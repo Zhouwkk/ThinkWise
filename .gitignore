@@ -5,6 +5,7 @@ eval_datasets/
 math_dataset/
 
 # Checkpoints & logs
+runs/
 checkpoints/
 tensorboard_log/
 wandb/
