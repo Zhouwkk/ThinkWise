@@ -1,5 +1,5 @@
 #!/bin/bash
-# GRPO Baseline (3B): R_ans + R_fmt，无课程采样，无MAR
+# GRPO Baseline (3B): answer + format rewards with a small global length penalty; no curriculum or MAR-based reward
 
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1}"
 GPU_IDS=(${CUDA_VISIBLE_DEVICES//,/ })

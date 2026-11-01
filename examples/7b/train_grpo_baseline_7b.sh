@@ -1,7 +1,7 @@
 #!/bin/bash
 # GRPO Baseline (7B)
-# R_total = R_ans + 0.1 * R_fmt
-# 无课程采样、无MAR提取、固定KL
+# R_total = R_ans + 0.1 * R_fmt - 0.01 * (length / 4096)
+# 无课程采样，奖励不使用 MAR，固定 KL
 
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3}"
 GPU_IDS=(${CUDA_VISIBLE_DEVICES//,/ })

@@ -137,6 +137,10 @@ export RUN_ROOT=/path/to/thinkwise-runs
 
 `TRAIN_FILE` overrides the default in all scripts. Without it, filtered scripts use `virl39k_filtered.json`, and the 7B full-topk / VSH scripts use `virl39k.json`, under `./data/ViRL39K`.
 
+Script presets are applied after the YAML configuration, and extra command-line arguments are applied last. In particular, 7B scripts set the actor model from `MODEL_PATH`, and PPO scripts set the critic model explicitly. Editing the YAML model paths alone does not override these script presets; use `MODEL_PATH`, `CRITIC_MODEL_PATH`, or a final `worker.actor.model.model_path=...` / `worker.critic.model.model_path=...` argument.
+
+`RUN_ROOT`, `CHECKPOINT_DIR`, and `N_GPUS` are handled by the shell scripts. When calling the Python entry point directly, set the corresponding `trainer.*` options explicitly.
+
 The full ThinkWise scripts enable curriculum sampling and use the MAR-based reward. Launching the YAML alone does not enable curriculum sampling, so use the full scripts below or explicitly set `algorithm.online_filtering=true`.
 
 ### Full ThinkWise: 3B and 7B
@@ -160,6 +164,15 @@ NCCL selects network interfaces and transport settings automatically. If your se
 ```bash
 bash examples/3b/train_curriculum_full.sh
 ```
+
+To resume from a different checkpoint directory, set `CHECKPOINT_DIR` before launching:
+
+```bash
+CHECKPOINT_DIR=/path/to/existing/experiment \
+  bash examples/3b/train_curriculum_full.sh
+```
+
+The shell checks for `checkpoint_tracker.json` before starting Python. Passing only `trainer.save_checkpoint_path=...` changes the Python save directory but does not change the shell's resume check. Use `CHECKPOINT_DIR` to keep them aligned.
 
 Logs are written under `${RUN_ROOT}/logs`, and checkpoints under the script's `CHECKPOINT_DIR`.
 
@@ -201,7 +214,14 @@ This limits training updates to two steps; it still performs the configured data
 | ThinkWise + PPO | `examples/3b/train_ppo_3b.sh` | `examples/7b/train_ppo_7b.sh` |
 | ThinkWise + REINFORCE++ | `examples/3b/train_reinforce_pp_3b.sh` | `examples/7b/train_reinforce_pp_7b.sh` |
 
-The environment variables above apply to all scripts. Each entry point retains its method-specific training settings. The current reward implementation assumes eight contiguous rollouts per question, matching `worker.rollout.n: 8` in the supplied configuration.
+The environment variables above apply to all training scripts. Each entry point retains its method-specific training settings.
+
+Implementation details for the supplied rewards:
+
+- The grouped ThinkWise reward functions used by GRPO and REINFORCE++ assume eight contiguous rollouts per question, matching the shared configuration's `worker.rollout.n: 8`.
+- ThinkWise PPO scripts use `worker.rollout.n=1` and the separate `thinkwise_reward_ppo.py` reward. Difficulty and the MAR threshold use batch-level statistics. Relative length uses a fixed reference of 1024 characters, and State B clips its length incentive at 0.5 instead of 1.0.
+- The shared baseline reward (`grpo_baseline_reward.py`, used by the GRPO, PPO, and REINFORCE++ baseline scripts) includes answer and format rewards plus a global length penalty of `0.01 * (length / 4096)`. The ThinkWise PPO reward also includes this global penalty.
+- Reward functions measure length using the decoded response's character count after their text normalization, rather than the number of tokenizer tokens.
 
 ### Export a Training Checkpoint
 
@@ -220,15 +240,15 @@ Replace the path with the actor directory of the checkpoint you want to export. 
 ThinkWise/
 ├── assets/                         # Framework figure
 ├── examples/
-│   ├── config_thinkwise.yaml      # Shared training configuration
+│   ├── config_thinkwise.yaml        # Shared training configuration
 │   ├── 3b/                         # 3B training and ablation scripts
 │   ├── 7b/                         # 7B training and ablation scripts
 │   ├── format_prompt/              # Prompt templates
 │   └── reward_function/            # ThinkWise and baseline rewards
-├── scripts/                        # Data preparation, model merging, analysis
+├── scripts/                        # Data preparation and model merging
 └── verl/
-│   ├── trainer/                    # Training orchestration
-│   └── workers/                    # Actor, rollout, reference, and reward workers
+    ├── trainer/                    # Training orchestration
+    └── workers/                    # Actor, rollout, reference, and reward workers
 ```
 
 ## Citation

@@ -220,15 +220,16 @@ class DataParallelPPOActor(BasePPOActor):
     def compute_mar(self, data: DataProto) -> list:
         """Compute MAR by piggybacking on a flash-attention forward pass.
 
-        Supports two modes (controlled by self.config.mar_mode):
+        Supported modes (controlled by self.config.mar_mode):
           - 'mid': MAR_mid — average over middle 50% layers, uniform temporal mean
+          - 'full_topk': all layers, top-quarter temporal aggregation
           - 'vsh': MAR_VSH — only top-K visual-sensitive heads, topk temporal aggregation
-          - 'disabled': Skip MAR computation and return empty results
+          - 'disabled': Skip MAR computation and return one zero per sample
         """
         # Check if MAR is disabled
         mar_mode = getattr(self.config, "mar_mode", "mid")
         if mar_mode == "disabled":
-            # Return empty MAR values to skip computation
+            # Return zero-valued MAR signals without running a forward pass
             batch_size = len(data)
             return [0.0] * batch_size
         

@@ -1,4 +1,5 @@
 # Data
+data/
 train_data/
 val_data/
 eval_datasets/

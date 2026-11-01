@@ -12,17 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-ThinkWise Reward Function -- PPO version (batch-level global statistics)
+ThinkWise Reward Function -- PPO version (batch-level statistics)
 
-Differences from the GRPO version:
-  - PPO samples one trajectory per question (rollout.n=1), so group-level statistics
-    are unavailable.
-  - d_i (difficulty) is estimated from the batch-wide average pass rate: d = 1 - batch_acc
-  - rho (relative length) uses the batch-wide average length as the baseline.
-  - All other reward logic (four-quadrant R_len, R_perc) is identical to the GRPO version.
+The supplied PPO scripts sample one trajectory per question (rollout.n=1).
+Difficulty and the adaptive MAR threshold therefore use batch-level statistics.
+Relative length is response character count divided by the fixed REFERENCE_LEN
+(default 1024), not the current batch's average length.
+
+The four perception/correctness states are retained. State B clips its exploration
+term to [0, 0.5], while the grouped reward clips it to [0, 1]. Perception reward is
+applied only to correct trajectories, with MAR and threshold normalized over the
+reward batch (range denominator floored at 1e-8).
 
 Reward structure:
-    R_total = R_ans + R_len + R_perc
+    R_total = R_ans + format_weight * R_fmt + len_weight * R_len
+              + perc_weight * R_perc - 0.01 * (length / 4096)
+Length is measured in decoded response characters after text normalization.
 """
 
 import re
@@ -112,7 +117,7 @@ def compute_score(
         mar = data["mar"]
 
         rho = length / ref_len
-        d_i = d_global  # Scheme A: all samples share the batch-level difficulty estimate
+        d_i = d_global  # All samples share the batch-level difficulty estimate
 
         # R_ans
         r_ans = acc
@@ -133,7 +138,7 @@ def compute_score(
             # State C: perception weak + correct -> difficulty-weighted penalty
             r_len = -((1.0 + d_i) / 2.0) * float(np.clip(rho - 1.0, 0.0, 1.0))
         else:
-            # State D: perception weak + wrong, or MAR unavailable -> zero gradient
+            # State D: perception weak + wrong, or MAR unavailable -> zero length reward
             r_len = 0.0
 
         # R_perc (perception incentive/penalty)

@@ -1,5 +1,5 @@
 # ThinkWise Ablation: curriculum + R_ans + R_len (no R_perc)
-# LEN_WEIGHT=0.5, PERC_WEIGHT=0
+# LEN_WEIGHT=0.1, PERC_WEIGHT=0
 # 与完整版 thinkwise_reward.py 相同，仅关闭 R_perc
 
 import re

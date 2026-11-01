@@ -15,20 +15,26 @@
 ThinkWise Reward Function (MAR-based)
 
 奖励结构：
-    R_total = R_ans + R_len + R_perc
+    R_total = R_ans + format_weight * R_fmt + len_weight * R_len + perc_weight * R_perc
 
-感知信号：MAR（Modality Attention Ratio），由 compute_log_probs 阶段提取后传入。
-若 MAR 不可用（extract_mar=false），退化为仅使用 R_ans + format。
+感知信号：MAR（Modality Attention Ratio），由独立的 compute_mar 阶段提取后传入。
+未提供 mar 字段或其值为 None 时，不施加长度奖励和感知奖励。
+mar_mode=disabled 会返回数值 0，并不等同于缺少 MAR；本函数没有 extract_mar 配置项。
 
-四象限 R_len（含难度调制 d_i = 1 - PassRate）：
-    状态A（MAR高 + 答对）：+clip(1 - ρ, 0, 1)                      奖励简洁
-    状态B（MAR高 + 答错）：+d_i * clip(ρ - 1, 0, 1)                难度加权探索
-    状态C（MAR低 + 答对）：-(1+d_i)/2 * clip(ρ - 1, 0, 1)          难度加权惩罚
-    状态D（MAR低 + 答错）：0                                         零梯度
+每道题按连续 K_ROLLOUTS=8 条轨迹分组，阈值为 τ_mar = μ_mar - ALPHA * σ_mar。
+难度为 d_i = 1 - PassRate，相对长度 ρ 为当前回答字符数除以同题组平均字符数。
 
-R_perc（感知奖惩）：
-    MAR > τ_mar：+γ1 * MAR
-    MAR ≤ τ_mar：-γ2 * (τ_mar - MAR)
+四状态 R_len：
+    状态A（MAR高 + 答对）：clip(1 - ρ, -1, 1)
+    状态B（MAR高 + 答错）：d_i * clip(ρ - 1, 0, 1)
+    状态C（MAR低 + 答对）：-(1+d_i)/2 * clip(ρ - 1, 0, 1)
+    状态D（MAR低 + 答错）：0
+
+R_perc 仅用于正确轨迹；错误轨迹为 0：
+    MAR > τ_mar：+GAMMA1 * MAR_normalized
+    MAR ≤ τ_mar：-GAMMA2 * tau_normalized
+其中 MAR_normalized 和 tau_normalized 使用当前 reward batch 的 MAR 最小值、最大值
+归一化；所有 MAR 相等时，代码使用 1.0 作为归一化分母。
 """
 
 import re
@@ -174,7 +180,7 @@ def compute_score(reward_inputs: list[dict[str, Any]], format_weight: float = FO
             # 状态C：感知无效 + 答对 → 难度加权惩罚，系数在(-1,0]
             r_len = -((1.0 + d_i) / 2.0) * np.clip(rho - 1.0, 0.0, 1.0)
         else:
-            # 状态D：感知无效 + 答错，或 MAR 不可用 → 零梯度
+            # 状态D：感知无效 + 答错，或 MAR 不可用 → 零长度奖励
             r_len = 0.0
 
         # ── R_perc（感知奖惩，仅答对时给正分）──

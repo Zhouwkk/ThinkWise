@@ -1,5 +1,5 @@
 #!/bin/bash
-# Naive REINFORCE++ Baseline (3B): R_ans + R_fmt only, no MAR, no curriculum
+# Naive REINFORCE++ Baseline (3B): answer + format rewards with a small global length penalty; no MAR-based reward or curriculum
 
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1}"
 GPU_IDS=(${CUDA_VISIBLE_DEVICES//,/ })
