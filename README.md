@@ -210,10 +210,9 @@ ThinkWise/
 │   ├── format_prompt/              # Prompt templates
 │   └── reward_function/            # ThinkWise and baseline rewards
 ├── scripts/                        # Data preparation, model merging, analysis
-├── verl/
+└── verl/
 │   ├── trainer/                    # Training orchestration
 │   └── workers/                    # Actor, rollout, reference, and reward workers
-└── EXPERIMENT_TRACKER.md            # Historical experiment notes
 ```
 
 ## Citation
