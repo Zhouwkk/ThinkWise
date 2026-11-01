@@ -1,5 +1,5 @@
 """
-将 ViRL39K parquet 转为 FAST-GRPO dataset.py 兼容的 JSON 格式。
+将 ViRL39K parquet 转为 ThinkWise dataset.py 兼容的 JSON 格式。
 
 处理内容:
   1. 补全缺少 <image> 占位符的 question（851/38870 条）

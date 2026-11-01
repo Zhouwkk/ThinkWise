@@ -1,5 +1,5 @@
 """
-将 FanqingM/MMK12 test split 预处理为 FAST-GRPO dataset.py 兼容的格式。
+将 FanqingM/MMK12 test split 预处理为 ThinkWise dataset.py 兼容的格式。
 
 MMK12 原始格式 (HuggingFace):
   - question: str (题目文本)
@@ -8,7 +8,7 @@ MMK12 原始格式 (HuggingFace):
   - options: list[str] (选项列表)
   - 其他字段: category, source 等
 
-FAST-GRPO dataset.py 期望格式:
+ThinkWise dataset.py 期望格式:
   - question: str (含 <image> 占位符)
   - answer: str (用 \boxed{} 包裹)
   - image: list[str] (图片文件名列表)
@@ -27,7 +27,7 @@ from datasets import load_dataset
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Preprocess MMK12 for FAST-GRPO validation")
+    parser = argparse.ArgumentParser(description="Preprocess MMK12 for ThinkWise validation")
     parser.add_argument("--output_dir", type=str, required=True,
                         help="Output directory for preprocessed data")
     parser.add_argument("--hf_token", type=str, default=None,
