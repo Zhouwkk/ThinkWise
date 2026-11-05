@@ -29,6 +29,7 @@ outputs/
 rebuttal_draft.md
 rebuttal_response_cn.md
 *.pdf
+!papers/ThinkWise.pdf
 efficiency_accuracy_paper*.png
 Untitled
 

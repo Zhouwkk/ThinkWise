@@ -6,7 +6,7 @@ Official implementation of **ThinkWise**, a perception-aware reinforcement learn
 
 **ACM Multimedia 2026 (MM '26)** · Rio de Janeiro, Brazil · November 10–14, 2026
 
-[Paper (DOI)](https://doi.org/10.1145/3767308.3835837) · [Code](https://github.com/Zhouwkk/ThinkWise)
+[Paper (PDF)](papers/ThinkWise.pdf) · [Paper (DOI)](https://doi.org/10.1145/3767308.3835837) · [Code](https://github.com/Zhouwkk/ThinkWise)
 
 **Authors:** Wenkang Zhou\*, Chen Yang\*, Jiaheng Peng, Xitong Li, Hongzhi Yin, Yunke Zhang, Lu Yu†, Peng-Fei Zhang†, Xuhui Ren†, and Shijie Zhang†.
 
@@ -239,6 +239,7 @@ Replace the path with the actor directory of the checkpoint you want to export. 
 ```text
 ThinkWise/
 ├── assets/                         # Framework figure
+├── papers/                         # Paper PDF
 ├── examples/
 │   ├── config_thinkwise.yaml        # Shared training configuration
 │   ├── 3b/                         # 3B training and ablation scripts
